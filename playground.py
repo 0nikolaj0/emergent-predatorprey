@@ -21,4 +21,5 @@ config = {
 agent = torch.load('latest.pt')
 agent.reset()
 agent.train(False)
-code.interact(local=locals())
+game = GameModule(default_game_config, 3, 2)
+#code.interact(local=locals())

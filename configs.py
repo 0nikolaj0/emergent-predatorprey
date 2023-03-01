@@ -4,7 +4,7 @@ import numpy as np
 import constants
 
 DEFAULT_BATCH_SIZE = 512
-DEFAULT_NUM_EPOCHS = 1000
+DEFAULT_NUM_EPOCHS = 100
 DEFAULT_LR = 5e-4
 SAVE_MODEL = True
 DEFAULT_MODEL_FILE = 'latest.pt'

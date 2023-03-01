@@ -47,6 +47,7 @@ class GameModule(nn.Module):
 
         goal_agents = self.Tensor(self.batch_size, self.num_agents, 1)
         goal_entities = (torch.rand(self.batch_size, self.num_agents, 1) * self.num_landmarks).floor().long() + self.num_agents
+        print(goal_entities)
         goal_locations = self.Tensor(self.batch_size, self.num_agents, 2)
 
         if self.using_cuda:
@@ -62,7 +63,8 @@ class GameModule(nn.Module):
 
         #TODO: Bad for loop?
         for b in range(self.batch_size):
-            goal_agents[b] = torch.randperm(self.num_agents)
+            goal_agents[b] = torch.unsqueeze(torch.randperm(self.num_agents),dim=1)
+            
 
         for b in range(self.batch_size):
             goal_locations[b] = self.locations.data[b][goal_entities[b].squeeze()]
