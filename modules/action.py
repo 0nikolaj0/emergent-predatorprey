@@ -25,7 +25,7 @@ class ActionModule(nn.Module):
                 nn.Linear(config.action_processor.hidden_size, config.action_processor.hidden_size),
                 nn.ELU(),
                 nn.Linear(config.action_processor.hidden_size, 4), #4 nodes, since we have 4 different movements: left,right,up,down
-                nn.Tanh())
+                nn.Tanh())                                         #could become 8 if we add diagonal movements
 
         if self.using_utterances:
             self.utterance_chooser = nn.Sequential(
