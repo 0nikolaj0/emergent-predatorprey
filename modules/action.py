@@ -24,7 +24,7 @@ class ActionModule(nn.Module):
         self.movement_chooser = nn.Sequential(
                 nn.Linear(config.action_processor.hidden_size, config.action_processor.hidden_size),
                 nn.ELU(),
-                nn.Linear(config.action_processor.hidden_size, config.movement_dim_size),
+                nn.Linear(config.action_processor.hidden_size, 4), #4 nodes, since we have 4 different movements: left,right,up,down
                 nn.Tanh())
 
         if self.using_utterances:
@@ -33,6 +33,7 @@ class ActionModule(nn.Module):
                     nn.ELU(),
                     nn.Linear(config.hidden_size, config.vocab_size))
             self.gumbel_softmax = GumbelSoftmax(config.use_cuda)
+
 
     def forward(self, physical, goal, mem, training, utterance=None):
         goal_processed, _ = self.goal_processor(goal, mem)
@@ -55,5 +56,15 @@ class ActionModule(nn.Module):
                 utterance[0, max_utter] = 1
         else:
             utterance = None
-        final_movement = (movement * 2 * self.movement_step_size) - self.movement_step_size
+        max_vals = torch.max(movement,1)[1] #get max output value of the movement chooser
+        mapping = {0 : torch.FloatTensor([-1,0]), #map to coordinate update
+                   1: torch.FloatTensor([1,0]), 
+                   2: torch.FloatTensor([0,-1]), 
+                   3: torch.FloatTensor([0,1])}
+        final_movement = torch.FloatTensor(movement.size())
+        for i,val in enumerate(max_vals):
+            actual = val.item()
+            final_movement[i] = mapping[actual]
         return final_movement, utterance, mem
+    
+
