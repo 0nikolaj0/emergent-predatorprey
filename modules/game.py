@@ -26,15 +26,15 @@ from torch.autograd import Variable
 
 class GameModule(nn.Module):
 
-    def __init__(self, config, num_agents, num_landmarks):
+    def __init__(self, config, num_agents, num_prey):
         super(GameModule, self).__init__()
 
         self.batch_size = config.batch_size # scalar: num games in this batch
         self.using_utterances = config.use_utterances # bool: whether current batch allows utterances
         self.using_cuda = config.use_cuda
         self.num_agents = num_agents # scalar: number of agents in this batch
-        self.num_landmarks = num_landmarks # scalar: number of landmarks in this batch
-        self.num_entities = self.num_agents + self.num_landmarks # type: int
+        self.num_prey = num_prey # scalar: number of landmarks in this batch
+        self.num_entities = self.num_agents + self.num_prey # type: int
 
         if self.using_cuda:
             self.Tensor = torch.cuda.FloatTensor
@@ -46,8 +46,7 @@ class GameModule(nn.Module):
         shapes = (torch.rand(self.batch_size, self.num_entities, 1) * config.num_shapes).floor()
 
         goal_agents = self.Tensor(self.batch_size, self.num_agents, 1)
-        goal_entities = (torch.rand(self.batch_size, self.num_agents, 1) * self.num_landmarks).floor().long() + self.num_agents
-        print(goal_entities)
+        goal_entities = (torch.rand(self.batch_size, self.num_agents, 1) * self.num_prey).floor().long() + self.num_agents
         goal_locations = self.Tensor(self.batch_size, self.num_agents, 2)
 
         if self.using_cuda:
