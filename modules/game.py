@@ -33,7 +33,7 @@ class GameModule(nn.Module):
         self.using_utterances = config.use_utterances # bool: whether current batch allows utterances
         self.using_cuda = config.use_cuda
         self.num_agents = num_agents # scalar: number of agents in this batch
-        self.num_prey = num_prey # scalar: number of landmarks in this batch
+        self.num_prey = num_prey # scalar: number of prey in this batch
         self.num_entities = self.num_agents + self.num_prey # type: int
 
         if self.using_cuda:
@@ -41,7 +41,7 @@ class GameModule(nn.Module):
         else:
             self.Tensor = torch.FloatTensor
 
-        locations = torch.rand(self.batch_size, self.num_entities, 2) * config.world_dim
+        locations = (torch.rand(self.batch_size, self.num_entities, 2) * config.world_dim).floor()
         colors = (torch.rand(self.batch_size, self.num_entities, 1) * config.num_colors).floor()
         shapes = (torch.rand(self.batch_size, self.num_entities, 1) * config.num_shapes).floor()
 
@@ -140,7 +140,7 @@ class GameModule(nn.Module):
     Computes the total cost agents get from being near their goals
     agent locations are stored as [batch_size, num_agents + num_landmarks, entity_embed_size]
     """
-    def compute_physical_cost(self):
+    def compute_physical_cost(self): #TODO: change function to incorporate the surrounding of prey
         return 2*torch.sum(
                     torch.sqrt(
                         torch.sum(

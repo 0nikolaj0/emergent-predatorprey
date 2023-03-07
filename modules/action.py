@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+import configs
+import constants
 
 from modules.processing import ProcessingModule
 from modules.gumbel_softmax import GumbelSoftmax
@@ -58,10 +60,10 @@ class ActionModule(nn.Module):
             utterance = None
         max_vals = torch.max(movement,1)[1] #get max output value of the movement chooser
         mapping = {0 : torch.FloatTensor([-1,0]), #map to coordinate update
-                   1: torch.FloatTensor([1,0]), 
-                   2: torch.FloatTensor([0,-1]), 
-                   3: torch.FloatTensor([0,1])}
-        final_movement = torch.FloatTensor(movement.size())
+                   1 : torch.FloatTensor([1,0]), 
+                   2 : torch.FloatTensor([0,-1]), 
+                   3 : torch.FloatTensor([0,1])}
+        final_movement = torch.FloatTensor(configs.DEFAULT_BATCH_SIZE,constants.WORLD_DIMENSIONALITY)
         for i,val in enumerate(max_vals):
             actual = val.item()
             final_movement[i] = mapping[actual]
