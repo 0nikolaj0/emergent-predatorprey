@@ -60,12 +60,10 @@ class GameModule(nn.Module):
         # [batch_size, num_entities, 2]
         self.physical = Variable(torch.cat((colors,shapes), 2).float())
 
-        #TODO: Bad for loop?
         for b in range(self.batch_size):
             goal_agents[b] = torch.unsqueeze(torch.randperm(self.num_agents),dim=1)
             
-
-        for b in range(self.batch_size):
+        for b in range(self.batch_size): #for each agent, location of the landmark goal that they want another agent to go to
             goal_locations[b] = self.locations.data[b][goal_entities[b].squeeze()]
 
         # [batch_size, num_agents, 3]
@@ -94,7 +92,7 @@ class GameModule(nn.Module):
 
         sort_idxs = torch.sort(self.goals[:,:,2])[1]
         self.sorted_goals = Variable(self.Tensor(self.goals.size()))
-        # TODO: Bad for loop?
+
         for b in range(self.batch_size):
             self.sorted_goals[b] = self.goals[b][sort_idxs[b]]
         self.sorted_goals = self.sorted_goals[:,:,:2]
@@ -162,8 +160,6 @@ class GameModule(nn.Module):
         observed_goals[., a_j, :] = a_j's goal with location relative to a_j
     Which means we want to build an observed_goals-like tensor but relative to each agent
         real_goal_locations[., a_i, a_j, :] = goals[., a_j, :] - locations[a_i]
-
-
     """
     def compute_goal_pred_cost(self, goal_predictions):
         relative_goal_locs = self.goals.unsqueeze(1)[:,:,:,:2] - self.locations.unsqueeze(2)[:, :self.num_agents, :, :]
