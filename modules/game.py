@@ -132,7 +132,8 @@ class GameModule(nn.Module):
         physical_cost = self.compute_physical_cost()
         movement_cost = self.compute_movement_cost(movements)
         goal_pred_cost = self.compute_goal_pred_cost(goal_predictions)
-        return physical_cost + goal_pred_cost + movement_cost
+        collision_cost = self.compute_collision_cost()
+        return physical_cost + goal_pred_cost + movement_cost + collision_cost
 
     """
     Computes the total cost agents get from being near their goals
@@ -180,7 +181,12 @@ class GameModule(nn.Module):
     """
     def compute_movement_cost(self, movements):
         return torch.sum(torch.sqrt(torch.sum(torch.pow(movements, 2), -1)))
-
+    
+    def compute_collision_cost(self): #penalty for agents being close to one another
+        slice = self.locations[:,self.num_agents,:]
+        cost = torch.sqrt(torch.sum(torch.cdist(slice,slice,1)))
+        return cost 
+                
     def get_avg_agent_to_goal_distance(self):
         return torch.sum(
                     torch.sqrt(
