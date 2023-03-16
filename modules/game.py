@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 from torch.autograd import Variable
+import configs
 
 """
     The GameModule takes in all actions(movement, utterance, goal prediction)
@@ -123,7 +124,7 @@ class GameModule(nn.Module):
             for b in range(self.num_agents):
                 for c in range(self.num_entities):
                     val = torch.sum(torch.abs(self.observations[a,b,c]))
-                    if val > 16:
+                    if val > configs.DEFAULT_VISIBILITY:
                         self.observations[a,b,c] = self.Tensor([0,0])
         new_obs = self.goals[:,:,:2] - agent_baselines
         goal_agents = self.goals[:,:,2].unsqueeze(2)

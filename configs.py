@@ -26,6 +26,7 @@ MIN_AGENTS = 2
 MIN_LANDMARKS = 3
 NUM_COLORS = 3
 NUM_SHAPES = 2
+DEFAULT_VISIBILITY = 16
 
 TrainingConfig = NamedTuple('TrainingConfig', [
     ('num_epochs', int),
