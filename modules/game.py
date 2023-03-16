@@ -118,7 +118,13 @@ class GameModule(nn.Module):
     def forward(self, movements, goal_predictions, utterances):
         self.locations = self.locations + movements
         agent_baselines = self.locations[:, :self.num_agents]
-        self.observations = self.locations.unsqueeze(1)- agent_baselines.unsqueeze(2)
+        self.observations = self.locations.unsqueeze(1) - agent_baselines.unsqueeze(2)
+        for a in range(self.batch_size):
+            for b in range(self.num_agents):
+                for c in range(self.num_entities):
+                    val = torch.sum(torch.abs(self.observations[a,b,c]))
+                    if val > 16:
+                        self.observations[a,b,c] = self.Tensor([0,0])
         new_obs = self.goals[:,:,:2] - agent_baselines
         goal_agents = self.goals[:,:,2].unsqueeze(2)
         self.observed_goals = torch.cat((new_obs, goal_agents), dim=2)
@@ -139,7 +145,7 @@ class GameModule(nn.Module):
     Computes the total cost agents get from being near their goals
     agent locations are stored as [batch_size, num_agents + num_landmarks, entity_embed_size]
     """
-    def compute_physical_cost(self): #TODO: change function to incorporate the surrounding of prey
+    def compute_physical_cost(self): 
         return 2*torch.sum(
                     torch.sqrt(
                         torch.sum(
