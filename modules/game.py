@@ -30,6 +30,7 @@ class GameModule(nn.Module):
     def __init__(self, config, num_agents, num_prey):
         super(GameModule, self).__init__()
 
+        self.Tensor = torch.cuda.FloatTensor if config.use_cuda else torch.FloatTensor
         self.batch_size = config.batch_size # scalar: num games in this batch
         self.using_utterances = config.use_utterances # bool: whether current batch allows utterances
         self.using_visibility = config.use_visibility
@@ -38,6 +39,8 @@ class GameModule(nn.Module):
         self.num_agents = num_agents # scalar: number of agents in this batch
         self.num_prey = num_prey # scalar: number of prey in this batch
         self.num_entities = self.num_agents + self.num_prey # type: int
+        self.using_obstacles = config.use_obstacles
+        self.obstacles = self.Tensor([(5,5),(5,4),(5,3),(5,2),(5,1)])
 
         if self.using_cuda:
             self.Tensor = torch.cuda.FloatTensor
@@ -119,7 +122,14 @@ class GameModule(nn.Module):
         - scalar: total cost of all games in the batch
     """
     def forward(self, movements, goal_predictions, utterances):
-        self.locations = self.locations + movements
+        updated_movement = self.locations + movements
+        if self.using_obstacles:
+            for game in range(self.batch_size):
+                for entity in range(self.num_entities):
+                    location = updated_movement[game,entity]
+                    if location in self.obstacles:
+                        updated_movement[game,entity] -= movements[game,entity]
+        self.locations = updated_movement
         agent_baselines = self.locations[:, :self.num_agents]
         self.observations = self.locations.unsqueeze(1) - agent_baselines.unsqueeze(2)
         if self.using_visibility:
@@ -127,7 +137,7 @@ class GameModule(nn.Module):
                 for agent in range(self.num_agents):
                     for entity in range(self.num_entities):
                         val = torch.sum(torch.abs(self.observations[game,agent,entity]))
-                        if val > self.visibility: #if entitity is not within a predefined range from an agent
+                        if val > self.visibility: #if entity is not within a predefined range from an agent
                             self.observations[game,agent,entity] = self.Tensor([0,0]) #set its observation to [0,0]
         new_obs = self.goals[:,:,:2] - agent_baselines
         goal_agents = self.goals[:,:,2].unsqueeze(2)

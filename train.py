@@ -26,6 +26,8 @@ parser.add_argument('--world-dim', '-w', type=int, help='if specified sets the s
 parser.add_argument('--oov-prob', '-o', type=int, help='higher value penalize uncommon words less when penalizing words (default 6)')
 parser.add_argument('--load-model-weights', type=str, help='if specified start with saved model weights saved at file given by this argument')
 parser.add_argument('--save-model-weights', type=str, help='if specified save the model weights at file given by this argument')
+parser.add_argument('--visibility', type=int, help='if specified sets the visibility range for all agents')
+parser.add_argument('--use_visibility', action='store_true', help='if specified enables visibility range for all agents')
 parser.add_argument('--use-cuda', action='store_true', help='if specified enables training on CUDA (default disabled)')
 
 def print_losses(epoch, losses, dists, game_config):
