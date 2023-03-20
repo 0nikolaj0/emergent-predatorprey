@@ -15,6 +15,7 @@ DEFAULT_FEAT_VEC_SIZE = 256
 DEFAULT_TIME_HORIZON = 16
 
 USE_UTTERANCES = True
+USE_VISIBILITY = True
 PENALIZE_WORDS = True
 DEFAULT_VOCAB_SIZE = 20
 DEFAULT_OOV_PROB = 1
@@ -23,7 +24,7 @@ DEFAULT_WORLD_DIM = 16
 MAX_AGENTS = 4
 MAX_LANDMARKS = 2
 MIN_AGENTS = 2
-MIN_LANDMARKS = 3
+MIN_LANDMARKS = 1
 NUM_COLORS = 3
 NUM_SHAPES = 2
 DEFAULT_VISIBILITY = 16
@@ -48,6 +49,8 @@ GameConfig = NamedTuple('GameConfig', [
     ('num_shapes', int),
     ('num_colors', int),
     ('use_utterances', bool),
+    ('use_visibility', bool),
+    ('visibility', int),
     ('vocab_size', int),
     ('memory_size', int),
     ('use_cuda', bool),
@@ -123,6 +126,8 @@ default_game_config = GameConfig(
         NUM_SHAPES,
         NUM_COLORS,
         USE_UTTERANCES,
+        USE_VISIBILITY,
+        DEFAULT_VISIBILITY,
         DEFAULT_VOCAB_SIZE,
         DEFAULT_HIDDEN_SIZE,
         False
@@ -191,6 +196,8 @@ def get_game_config(kwargs):
             num_shapes=kwargs['num_shapes'] or default_game_config.num_shapes,
             num_colors=kwargs['num_colors'] or default_game_config.num_colors,
             use_utterances=not kwargs['no_utterances'],
+            use_visibility=default_game_config.use_visibility,
+            visibility=default_game_config.visibility,
             vocab_size=kwargs['vocab_size'] or default_game_config.vocab_size,
             memory_size=default_game_config.memory_size,
             use_cuda=kwargs['use_cuda']

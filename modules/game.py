@@ -11,15 +11,15 @@ import configs
 
     Game consists of:
         -num_agents (scalar)
-        -num_landmarks (scalar)
-        -locations: [num_agents + num_landmarks, 2]
-        -physical: [num_agents + num_landmarks, entity_embed_size]
+        -num_prey (scalar)
+        -locations: [num_agents + num_prey, 2]
+        -physical: [num_agents + num_prey, entity_embed_size]
         -utterances: [num_agents, vocab_size]
         -goals: [num_agents, goal_size]
-        -location_observations: [num_agents, num_agents + num_landmarks, 2]
+        -location_observations: [num_agents, num_agents + num_prey, 2]
         -memories
             -utterance: [num_agents, num_agents, memory_size]
-            -physical:[num_agents, num_agents + num_landmarks, memory_size]
+            -physical:[num_agents, num_agents + num_prey, memory_size]
             -action: [num_agents, memory_size]
 
         config needs: -batch_size, -using_utterances, -world_dim, -vocab_size, -memory_size, -num_colors -num_shapes
@@ -32,6 +32,8 @@ class GameModule(nn.Module):
 
         self.batch_size = config.batch_size # scalar: num games in this batch
         self.using_utterances = config.use_utterances # bool: whether current batch allows utterances
+        self.using_visibility = config.use_visibility
+        self.visibility = config.visibility
         self.using_cuda = config.use_cuda
         self.num_agents = num_agents # scalar: number of agents in this batch
         self.num_prey = num_prey # scalar: number of prey in this batch
@@ -120,12 +122,13 @@ class GameModule(nn.Module):
         self.locations = self.locations + movements
         agent_baselines = self.locations[:, :self.num_agents]
         self.observations = self.locations.unsqueeze(1) - agent_baselines.unsqueeze(2)
-        for a in range(self.batch_size):
-            for b in range(self.num_agents):
-                for c in range(self.num_entities):
-                    val = torch.sum(torch.abs(self.observations[a,b,c]))
-                    if val > configs.DEFAULT_VISIBILITY:
-                        self.observations[a,b,c] = self.Tensor([0,0])
+        if self.using_visibility:
+            for game in range(self.batch_size):
+                for agent in range(self.num_agents):
+                    for entity in range(self.num_entities):
+                        val = torch.sum(torch.abs(self.observations[game,agent,entity]))
+                        if val > self.visibility: #if entitity is not within a predefined range from an agent
+                            self.observations[game,agent,entity] = self.Tensor([0,0]) #set its observation to [0,0]
         new_obs = self.goals[:,:,:2] - agent_baselines
         goal_agents = self.goals[:,:,2].unsqueeze(2)
         self.observed_goals = torch.cat((new_obs, goal_agents), dim=2)
@@ -140,7 +143,7 @@ class GameModule(nn.Module):
         movement_cost = self.compute_movement_cost(movements)
         goal_pred_cost = self.compute_goal_pred_cost(goal_predictions)
         collision_cost = self.compute_collision_cost()
-        return physical_cost + goal_pred_cost + movement_cost
+        return physical_cost + goal_pred_cost + movement_cost + collision_cost
 
     """
     Computes the total cost agents get from being near their goals
