@@ -109,13 +109,13 @@ class AgentModule(nn.Module):
                 utterance_feat = self.get_utterance_feat(game, agent, goal_predictions)
                 self.get_action(game, agent, physical_feat, utterance_feat, movements, utterances)
 
+            for prey in range(game.num_agents,game.num_entities):
+                ind = torch.randint(4,size=(1,)).item()
+                movements[:,prey,:] = possible_movements[ind]    
+
             cost = game(movements, goal_predictions, utterances)
             if self.penalizing_words:
                 cost = cost + self.word_counter(utterances)
-
-            for prey in range(game.num_agents,game.num_entities):
-                ind = torch.randint(4,size=(1,)).item()
-                movements[:,prey,:] = possible_movements[ind]
 
             self.total_cost = self.total_cost + cost
             if not self.training:
