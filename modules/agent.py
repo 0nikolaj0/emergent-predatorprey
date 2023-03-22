@@ -7,6 +7,8 @@ from modules.goal_predicting import GoalPredictingProcessingModule
 from modules.action import ActionModule
 from modules.word_counting import WordCountingModule
 
+from matplotlib import pyplot as plt
+
 
 """
     The AgentModule is the general module that's responsible for the execution of
@@ -95,6 +97,8 @@ class AgentModule(nn.Module):
 
     def forward(self, game):
         timesteps = []
+        locationsx = []
+        locationsy = []
         for t in range(self.time_horizon):
             movements = Variable(self.Tensor(game.batch_size, game.num_entities, self.movement_dim_size).zero_())
             possible_movements = self.Tensor([[-1,0],[1,0],[0,-1],[0,1]])
@@ -125,4 +129,11 @@ class AgentModule(nn.Module):
                     'loss': cost})
                 if self.using_utterances:
                     timesteps[-1]['utterances'] = utterances
+            locationsx.append(game.locations[0,:,0].tolist())
+            locationsy.append(game.locations[0,:,1].tolist())
+
+        plt.xlim([-3,16])
+        plt.ylim([-3,16])
+        plt.scatter(sum(locationsx,[]),sum(locationsy,[]))
+        plt.show()
         return self.total_cost, timesteps

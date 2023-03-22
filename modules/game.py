@@ -204,7 +204,7 @@ class GameModule(nn.Module):
     
     def compute_collision_cost(self): #penalty for agents being close to one another
         slice = self.locations[:,:self.num_agents]
-        return torch.sqrt(torch.sum(torch.cdist(slice,slice,1)))
+        return torch.sqrt(torch.sum(torch.pow(torch.cdist(slice,slice,1),2)))
                 
     def get_avg_agent_to_goal_distance(self):
         return torch.sum(
