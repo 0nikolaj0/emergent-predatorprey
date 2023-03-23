@@ -129,11 +129,22 @@ class AgentModule(nn.Module):
                     'loss': cost})
                 if self.using_utterances:
                     timesteps[-1]['utterances'] = utterances
-            locationsx.append(game.locations[0,:,0].tolist())
-            locationsy.append(game.locations[0,:,1].tolist())
+            locationsx.append(game.locations[0].tolist())
+            #locationsy.append(game.locations[0,:,1].tolist())
+        self.draw_game(locationsx, game)
+        
+        return self.total_cost, timesteps
 
+
+
+    def draw_game(self, lx, game):
         plt.xlim([-3,16])
         plt.ylim([-3,16])
-        plt.scatter(sum(locationsx,[]),sum(locationsy,[]))
+        colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+        for loc in lx:
+            for i in range(game.num_agents):
+                plt.scatter(loc[i][0], loc[i][1], c=colors[i])
+            for k in range(game.num_agents, game.num_prey+game.num_agents):
+                plt.scatter(loc[k][0], loc[k][1], c=colors[k], marker="^")
+        #plt.scatter(sum(lx,[]),sum(ly,[]))
         plt.show()
-        return self.total_cost, timesteps

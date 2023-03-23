@@ -40,6 +40,7 @@ class GameModule(nn.Module):
         self.num_prey = num_prey # scalar: number of prey in this batch
         self.num_entities = self.num_agents + self.num_prey # type: int
         self.using_obstacles = config.use_obstacles
+        self.using_draw = config.use_draw
         self.obstacles = self.Tensor([(5,5),(5,4),(5,3),(5,2),(5,1)]) #hardcoded obstacle for now
 
         if self.using_cuda:

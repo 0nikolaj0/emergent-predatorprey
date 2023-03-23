@@ -20,6 +20,7 @@ DEFAULT_TIME_HORIZON = 16
 USE_UTTERANCES = True
 USE_VISIBILITY = True
 USE_OBSTACLES = True
+USE_DRAW = True
 PENALIZE_WORDS = True
 DEFAULT_VOCAB_SIZE = 20
 DEFAULT_OOV_PROB = 1
@@ -56,6 +57,7 @@ GameConfig = NamedTuple('GameConfig', [
     ('use_visibility', bool),
     ('visibility', int),
     ('use_obstacles', bool),
+    ('use_draw', bool),
     ('vocab_size', int),
     ('memory_size', int),
     ('use_cuda', bool),
@@ -134,6 +136,7 @@ default_game_config = GameConfig(
         USE_VISIBILITY,
         DEFAULT_VISIBILITY,
         USE_OBSTACLES,
+        USE_DRAW,
         DEFAULT_VOCAB_SIZE,
         DEFAULT_HIDDEN_SIZE,
         False
@@ -205,6 +208,7 @@ def get_game_config(kwargs):
             use_visibility=default_game_config.use_visibility,
             visibility=default_game_config.visibility,
             use_obstacles=default_game_config.use_obstacles,
+            use_draw=default_game_config.use_draw,
             vocab_size=kwargs['vocab_size'] or default_game_config.vocab_size,
             memory_size=default_game_config.memory_size,
             use_cuda=kwargs['use_cuda']
