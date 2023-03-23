@@ -74,7 +74,7 @@ class GameModule(nn.Module):
 
         # [batch_size, num_agents, 3]
         self.goals = Variable(torch.cat((goal_locations, goal_agents), 2))
-        goal_agents = Variable(goal_agents)
+        self.goal_agents = Variable(goal_agents)
 
 
         if self.using_cuda:

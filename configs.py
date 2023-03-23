@@ -91,6 +91,7 @@ ActionModuleConfig = NamedTuple("ActionModuleConfig", [
     ('movement_step_size', int),
     ('vocab_size', int),
     ('use_utterances', bool),
+    ('use_draw', bool),
     ('use_cuda', bool)
     ])
 
@@ -105,6 +106,7 @@ AgentModuleConfig = NamedTuple("AgentModuleConfig", [
     ('action_processor', ActionModuleConfig),
     ('word_counter', WordCountingModuleConfig),
     ('use_utterances', bool),
+    ('use_draw', bool),
     ('penalize_words', bool),
     ('use_cuda', bool)
     ])
@@ -162,6 +164,7 @@ default_action_module_config = ActionModuleConfig(
         movement_step_size=constants.MOVEMENT_STEP_SIZE,
         vocab_size=DEFAULT_VOCAB_SIZE,
         use_utterances=USE_UTTERANCES,
+        use_draw=USE_DRAW,
         use_cuda=False)
 
 default_goal_predicting_module_config = GoalPredictingProcessingModuleConfig(
@@ -181,6 +184,7 @@ default_agent_config = AgentModuleConfig(
         goal_size=constants.GOAL_SIZE,
         vocab_size=DEFAULT_VOCAB_SIZE,
         use_utterances=USE_UTTERANCES,
+        use_draw=USE_DRAW,
         penalize_words=PENALIZE_WORDS,
         use_cuda=False)
 
@@ -220,6 +224,7 @@ def get_agent_config(kwargs):
     use_cuda = kwargs['use_cuda']
     penalize_words = kwargs['penalize_words']
     oov_prob = kwargs['oov_prob'] or DEFAULT_OOV_PROB
+    use_draw = USE_DRAW
     if use_utterances:
         feat_vec_size = DEFAULT_FEAT_VEC_SIZE*3
     else:
@@ -255,6 +260,7 @@ def get_agent_config(kwargs):
             goal_size=default_agent_config.goal_size,
             vocab_size=vocab_size,
             use_utterances=use_utterances,
+            use_draw=use_draw,
             penalize_words=penalize_words,
             use_cuda=use_cuda
             )
