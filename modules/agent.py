@@ -37,6 +37,7 @@ class AgentModule(nn.Module):
         self.using_utterances = config.use_utterances
         self.penalizing_words = config.penalize_words
         self.using_cuda = config.use_cuda
+        self.using_draw = config.use_draw
         self.time_horizon = config.time_horizon
         self.movement_dim_size = config.movement_dim_size
         self.vocab_size = config.vocab_size
@@ -97,8 +98,7 @@ class AgentModule(nn.Module):
 
     def forward(self, game):
         timesteps = []
-        locationsx = []
-        locationsy = []
+        locations0 = []
         for t in range(self.time_horizon):
             movements = Variable(self.Tensor(game.batch_size, game.num_entities, self.movement_dim_size).zero_())
             possible_movements = self.Tensor([[-1,0],[1,0],[0,-1],[0,1]])
@@ -129,10 +129,9 @@ class AgentModule(nn.Module):
                     'loss': cost})
                 if self.using_utterances:
                     timesteps[-1]['utterances'] = utterances
-            locationsx.append(game.locations[0].tolist())
-            #locationsy.append(game.locations[0,:,1].tolist())
-        self.draw_game(locationsx, game)
-        
+            locations0.append(game.locations[0].tolist())
+        if self.using_draw:
+            self.draw_game(locations0, game)
         return self.total_cost, timesteps
 
 
@@ -146,5 +145,4 @@ class AgentModule(nn.Module):
                 plt.scatter(loc[i][0], loc[i][1], c=colors[i])
             for k in range(game.num_agents, game.num_prey+game.num_agents):
                 plt.scatter(loc[k][0], loc[k][1], c=colors[k], marker="^")
-        #plt.scatter(sum(lx,[]),sum(ly,[]))
         plt.show()
