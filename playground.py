@@ -21,6 +21,6 @@ config = {
 agent = torch.load('models/22-03-2023 1449.pt')
 agent.reset()
 agent.train(False)
-game = GameModule(default_game_config, 3, 2)
+game = GameModule(default_game_config, 3, 1)
 agent.forward(game)
 #code.interact(local=locals())

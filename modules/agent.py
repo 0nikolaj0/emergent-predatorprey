@@ -144,11 +144,13 @@ class AgentModule(nn.Module):
         plt.ylim([-3.5,20])
         ticks = np.arange(-3.5,20,1)
         colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+        size = 0
         for loc in lx:
             for i in range(game.num_agents):
-                plt.scatter(loc[i][0], loc[i][1], s=150, c=colors[i], marker=f"$a{i}$")
+                plt.scatter(loc[i][0], loc[i][1], s=70+size, c=colors[i], marker=f"$a{i}$")
             for k in range(game.num_agents, game.num_prey+game.num_agents):
-                plt.scatter(loc[k][0], loc[k][1], s=150, c=colors[k], marker=f"$p{k-game.num_agents}$")
+                plt.scatter(loc[k][0], loc[k][1], s=70+size, c=colors[k], marker=f"$p{k-game.num_agents}$")
+            size += 10
         plt.grid(visible=True, axis='both')
         ax.set_xticks(ticks)
         ax.set_yticks(ticks)
