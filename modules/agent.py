@@ -131,6 +131,7 @@ class AgentModule(nn.Module):
                     'loss': cost})
                 if self.using_utterances:
                     timesteps[-1]['utterances'] = utterances
+            #print(game.get_avg_agent_to_goal_distance())
             locations0.append(game.locations[0].tolist())
         if True:
             self.draw_game(locations0, game)

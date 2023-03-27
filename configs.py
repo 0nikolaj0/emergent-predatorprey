@@ -243,6 +243,7 @@ def get_agent_config(kwargs):
             movement_step_size=constants.MOVEMENT_STEP_SIZE,
             vocab_size=vocab_size,
             use_utterances=use_utterances,
+            use_draw=use_draw,
             use_cuda=use_cuda)
     word_counter = WordCountingModuleConfig(
             vocab_size=vocab_size,

@@ -58,7 +58,8 @@ class ActionModule(nn.Module):
                 utterance[0, max_utter] = 1
         else:
             utterance = None
-        max_vals = torch.max(movement,1)[1] #get max output value of the movement chooser
+        max_movement = torch.max(movement,1)
+        max_vals = max_movement[1] #get max output value of the movement chooser
         mapping = {0 : torch.FloatTensor([-1,0]), #map to coordinate update
                    1 : torch.FloatTensor([1,0]), 
                    2 : torch.FloatTensor([0,-1]), 
