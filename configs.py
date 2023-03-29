@@ -21,14 +21,14 @@ USE_UTTERANCES = True
 USE_VISIBILITY = True
 USE_OBSTACLES = False
 USE_DRAW = True
-PENALIZE_WORDS = True
+PENALIZE_WORDS = False
 DEFAULT_VOCAB_SIZE = 20
 DEFAULT_OOV_PROB = 1
 
 DEFAULT_WORLD_DIM = 16
-MAX_AGENTS = 4
-MAX_LANDMARKS = 2
-MIN_AGENTS = 2
+MAX_AGENTS = 2
+MAX_LANDMARKS = 1
+MIN_AGENTS = 1
 MIN_LANDMARKS = 1
 NUM_COLORS = 3
 NUM_SHAPES = 2
@@ -222,7 +222,7 @@ def get_agent_config(kwargs):
     vocab_size = kwargs['vocab_size'] or DEFAULT_VOCAB_SIZE
     use_utterances = (not kwargs['no_utterances'])
     use_cuda = kwargs['use_cuda']
-    penalize_words = kwargs['penalize_words']
+    penalize_words = PENALIZE_WORDS
     oov_prob = kwargs['oov_prob'] or DEFAULT_OOV_PROB
     use_draw = USE_DRAW
     if use_utterances:

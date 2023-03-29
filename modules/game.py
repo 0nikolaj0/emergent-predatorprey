@@ -74,6 +74,8 @@ class GameModule(nn.Module):
 
         # [batch_size, num_agents, 3]
         self.goals = Variable(torch.cat((goal_locations, goal_agents), 2))
+        self.goal_entities = Variable(goal_entities)
+        self.goal_locations = Variable(goal_locations)
         self.goal_agents = Variable(goal_agents)
 
 
@@ -105,7 +107,7 @@ class GameModule(nn.Module):
 
         # [batch_size, num_agents, num_entities, 2]
         self.observations = self.locations.unsqueeze(1) - agent_baselines.unsqueeze(2)
-
+    
         new_obs = self.goals[:,:,:2] - agent_baselines
 
         # [batch_size, num_agents, 2] [batch_size, num_agents, 1]
@@ -139,9 +141,16 @@ class GameModule(nn.Module):
                         val = torch.sum(torch.abs(self.observations[game,agent,entity]))
                         if val > self.visibility: #if entity is not within a predefined range from an agent
                             self.observations[game,agent,entity] = self.Tensor([0,0]) #set its observation to [0,0]
+        for b in range(self.batch_size): 
+            self.goal_locations[b] = self.locations.data[b][self.goal_entities[b].squeeze()]
+        self.goals = torch.cat((self.goal_locations, self.goal_agents), 2)
         new_obs = self.goals[:,:,:2] - agent_baselines
         goal_agents = self.goals[:,:,2].unsqueeze(2)
         self.observed_goals = torch.cat((new_obs, goal_agents), dim=2)
+        sort_idxs = torch.sort(self.goals[:,:,2])[1]
+        for b in range(self.batch_size):
+            self.sorted_goals[b] = self.goals[b][sort_idxs[b]][:,:2]
+        self.sorted_goals = self.sorted_goals[:,:,:2]
         if self.using_utterances:
             self.utterances = utterances
             return self.compute_cost(movements, goal_predictions, utterances)
@@ -153,8 +162,7 @@ class GameModule(nn.Module):
         movement_cost = self.compute_movement_cost(movements)
         goal_pred_cost = self.compute_goal_pred_cost(goal_predictions)
         collision_cost = self.compute_collision_cost()
-        #print(collision_cost)
-        return physical_cost + goal_pred_cost
+        return physical_cost + goal_pred_cost + collision_cost
 
     """
     Computes the total cost agents get from being near their goals

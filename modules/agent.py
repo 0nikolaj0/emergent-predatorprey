@@ -110,14 +110,15 @@ class AgentModule(nn.Module):
                 utterances = Variable(self.Tensor(game.batch_size, game.num_agents, self.vocab_size))
                 goal_predictions = Variable(self.Tensor(game.batch_size, game.num_agents, game.num_agents, self.goal_size))
 
+            for prey in range(game.num_agents,game.num_entities):
+                ind = torch.randint(4,size=(1,)).item()
+                #movements[:,prey,:] = possible_movements[ind]
+                game.locations[:,prey,:] += possible_movements[ind]    
+
             for agent in range(game.num_agents):
                 physical_feat = self.get_physical_feat(game, agent)
                 utterance_feat = self.get_utterance_feat(game, agent, goal_predictions)
                 self.get_action(game, agent, physical_feat, utterance_feat, movements, utterances)
-
-            for prey in range(game.num_agents,game.num_entities):
-                ind = torch.randint(4,size=(1,)).item()
-                movements[:,prey,:] = possible_movements[ind]    
 
             cost = game(movements, goal_predictions, utterances)
             if self.penalizing_words:
@@ -131,7 +132,6 @@ class AgentModule(nn.Module):
                     'loss': cost})
                 if self.using_utterances:
                     timesteps[-1]['utterances'] = utterances
-            #print(game.get_avg_agent_to_goal_distance())
             locations0.append(game.locations[0].tolist())
         if True:
             self.draw_game(locations0, game)

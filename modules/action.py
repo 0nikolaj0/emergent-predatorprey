@@ -26,13 +26,13 @@ class ActionModule(nn.Module):
         self.movement_chooser = nn.Sequential(
                 nn.Linear(config.action_processor.hidden_size, config.action_processor.hidden_size),
                 nn.ELU(),
-                nn.Linear(config.action_processor.hidden_size, 4), #4 nodes, since we have 4 different movements: left,right,up,down
-                nn.Tanh())                                         #could become 8 if we add diagonal movements
-
+                nn.Linear(config.action_processor.hidden_size, 2), #5 nodes, since we have 5 different movements: left,right,up,down or stay
+                nn.Tanh())                                         #could become 9 if we add diagonal movements
+        self.movement_chooser.requires_grad_()
         if self.using_utterances:
             self.utterance_chooser = nn.Sequential(
                     nn.Linear(config.action_processor.hidden_size, config.hidden_size),
-                    nn.ELU(),
+                    nn.ELU(), 
                     nn.Linear(config.hidden_size, config.vocab_size))
             self.gumbel_softmax = GumbelSoftmax(config.use_cuda)
 
@@ -52,22 +52,13 @@ class ActionModule(nn.Module):
             else:
                 utterance = torch.zeros(utter.size())
                 if self.using_cuda:
-                    utterance = utterance.cuda()
+                    utterance = utterance.cuda() #tensor([0.01,0.05])
                 max_utter = utter.max(1)[1]
                 max_utter = max_utter.data[0]
                 utterance[0, max_utter] = 1
         else:
             utterance = None
-        max_movement = torch.max(movement,1)
-        max_vals = max_movement[1] #get max output value of the movement chooser
-        mapping = {0 : torch.FloatTensor([-1,0]), #map to coordinate update
-                   1 : torch.FloatTensor([1,0]), 
-                   2 : torch.FloatTensor([0,-1]), 
-                   3 : torch.FloatTensor([0,1])}
-        final_movement = torch.FloatTensor(configs.DEFAULT_BATCH_SIZE,constants.WORLD_DIMENSIONALITY)
-        for i,val in enumerate(max_vals):
-            actual = val.item()
-            final_movement[i] = mapping[actual]
+        final_movement = (movement * 2 * self.movement_step_size) - self.movement_step_size
         return final_movement, utterance, mem
     
 
