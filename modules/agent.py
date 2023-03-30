@@ -112,8 +112,8 @@ class AgentModule(nn.Module):
 
             for prey in range(game.num_agents,game.num_entities):
                 ind = torch.randint(4,size=(1,)).item()
-                #movements[:,prey,:] = possible_movements[ind]
-                game.locations[:,prey,:] += possible_movements[ind]    
+                movements[:,prey,:] = possible_movements[ind]
+                #game.locations[:,prey,:] += possible_movements[ind]    
 
             for agent in range(game.num_agents):
                 physical_feat = self.get_physical_feat(game, agent)
@@ -133,7 +133,7 @@ class AgentModule(nn.Module):
                 if self.using_utterances:
                     timesteps[-1]['utterances'] = utterances
             locations0.append(game.locations[0].tolist())
-        if True:
+        if self.using_draw:
             self.draw_game(locations0, game)
         return self.total_cost, timesteps
 

@@ -8,9 +8,9 @@ config = {
         'batch_size': default_game_config.batch_size,
         'world_dim': default_game_config.world_dim,
         'max_agents': default_game_config.max_agents,
-        'max_landmarks': default_game_config.max_landmarks,
+        'max_preys': default_game_config.max_preys,
         'min_agents': default_game_config.min_agents,
-        'min_landmarks': default_game_config.min_landmarks,
+        'min_preys': default_game_config.min_preys,
         'num_shapes': default_game_config.num_shapes,
         'num_colors': default_game_config.num_colors,
         'no_utterances': not default_game_config.use_utterances,
@@ -18,9 +18,9 @@ config = {
         'memory_size': default_game_config.memory_size
     }
 
-agent = torch.load('models/29-03-2023 1418 easy2111.pt')
+agent = torch.load('models/29-03-2023 1622 easy2111.pt')
 agent.reset()
 agent.train(False)
-game = GameModule(default_game_config, 3, 1)
-agent.forward(game)
+game = GameModule(default_game_config, 4, 1)
+agent(game)
 #code.interact(local=locals())

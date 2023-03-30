@@ -69,7 +69,7 @@ class GameModule(nn.Module):
         for b in range(self.batch_size):
             goal_agents[b] = torch.unsqueeze(torch.randperm(self.num_agents),dim=1)
             
-        for b in range(self.batch_size): #for each agent, location of the landmark goal that they want another agent to go to
+        for b in range(self.batch_size): #for each agent, location of the prey goal that they want another agent to go to
             goal_locations[b] = self.locations.data[b][goal_entities[b].squeeze()]
 
         # [batch_size, num_agents, 3]
@@ -100,11 +100,9 @@ class GameModule(nn.Module):
 
         sort_idxs = torch.sort(self.goals[:,:,2])[1]
         self.sorted_goals = Variable(self.Tensor(self.goals.size()))
-
         for b in range(self.batch_size):
             self.sorted_goals[b] = self.goals[b][sort_idxs[b]]
         self.sorted_goals = self.sorted_goals[:,:,:2]
-
         # [batch_size, num_agents, num_entities, 2]
         self.observations = self.locations.unsqueeze(1) - agent_baselines.unsqueeze(2)
     
@@ -162,11 +160,11 @@ class GameModule(nn.Module):
         movement_cost = self.compute_movement_cost(movements)
         goal_pred_cost = self.compute_goal_pred_cost(goal_predictions)
         collision_cost = self.compute_collision_cost()
-        return physical_cost + goal_pred_cost + collision_cost
+        return physical_cost + movement_cost + goal_pred_cost + collision_cost
 
     """
     Computes the total cost agents get from being near their goals
-    agent locations are stored as [batch_size, num_agents + num_landmarks, entity_embed_size]
+    agent locations are stored as [batch_size, num_agents + num_preys, entity_embed_size]
     """
     def compute_physical_cost(self): 
         return 2*torch.sum(
@@ -208,12 +206,14 @@ class GameModule(nn.Module):
     """
     Computes the total cost agents get from moving
     """
-    def compute_movement_cost(self, movements): #not needed because movement cost is always the same
-        return torch.sum(torch.sqrt(torch.sum(torch.pow(movements, 2), -1)))
+    def compute_movement_cost(self, movements):
+        clone = torch.abs(movements.clone())
+        return torch.sum(torch.sqrt(torch.sum(torch.pow(clone, 2), -1)))
     
     def compute_collision_cost(self): #penalty for agents being close to one another
-        slice = self.locations[:,:self.num_agents,:]
-        return torch.sum(torch.cdist(slice,slice,1))
+        slice = self.locations[:,:self.num_agents,:].clone()
+        return torch.sum(torch.cdist(slice,slice,1)) #computes the distance from each agent to each other agent
+                                                     #then sums all these distances
                 
     def get_avg_agent_to_goal_distance(self):
         return torch.sum(

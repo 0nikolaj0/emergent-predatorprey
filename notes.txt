@@ -18,7 +18,7 @@ HYPERPARAMETER TUNING:
 
 LEARNING END:
 -------------
-[ ] Try relative goals (left of landmark, above landmark), see if relative direction words evolve
+[ ] Try relative goals (left of prey, above prey), see if relative direction words evolve
 [ ] Give different award coefficients to goals, have a single agent have multiple goals, see if award values can be communicated
 
 DISTANT FUTURE:
@@ -33,7 +33,7 @@ Unstructured thoughts:
   - Simulate different visual systems, see how color words evolve
 - Verbs
   - GO
-  - TAKE (i.e. make landmarks movable, have a goal be the moving of a landmark to another landmark)
-- Make sequential goals (i.e. go to blue, then green) and also multi-landmark but not ordered goals (go to green and blue in any order). See if a way to discriminate evolves
+  - TAKE (i.e. make preys movable, have a goal be the moving of a prey to another prey)
+- Make sequential goals (i.e. go to blue, then green) and also multi-prey but not ordered goals (go to green and blue in any order). See if a way to discriminate evolves
 - Narration (Agent A observes a certain environment, tries to describe it to Agent B, Agent B predicts the environment history)
 

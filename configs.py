@@ -20,16 +20,16 @@ DEFAULT_TIME_HORIZON = 16
 USE_UTTERANCES = True
 USE_VISIBILITY = True
 USE_OBSTACLES = False
-USE_DRAW = True
+USE_DRAW = False
 PENALIZE_WORDS = False
 DEFAULT_VOCAB_SIZE = 20
 DEFAULT_OOV_PROB = 1
 
 DEFAULT_WORLD_DIM = 16
-MAX_AGENTS = 2
-MAX_LANDMARKS = 1
-MIN_AGENTS = 1
-MIN_LANDMARKS = 1
+MAX_AGENTS = 4
+MAX_PREYS = 2
+MIN_AGENTS = 3
+MIN_PREYS = 1
 NUM_COLORS = 3
 NUM_SHAPES = 2
 DEFAULT_VISIBILITY = 16
@@ -48,9 +48,9 @@ GameConfig = NamedTuple('GameConfig', [
     ('batch_size', int),
     ('world_dim', Any),
     ('max_agents', int),
-    ('max_landmarks', int),
+    ('max_preys', int),
     ('min_agents', int),
-    ('min_landmarks', int),
+    ('min_preys', int),
     ('num_shapes', int),
     ('num_colors', int),
     ('use_utterances', bool),
@@ -129,9 +129,9 @@ default_game_config = GameConfig(
         DEFAULT_BATCH_SIZE,
         DEFAULT_WORLD_DIM,
         MAX_AGENTS,
-        MAX_LANDMARKS,
+        MAX_PREYS,
         MIN_AGENTS,
-        MIN_LANDMARKS,
+        MIN_PREYS,
         NUM_SHAPES,
         NUM_COLORS,
         USE_UTTERANCES,
@@ -204,8 +204,8 @@ def get_game_config(kwargs):
             world_dim=kwargs['world_dim'] or default_game_config.world_dim,
             max_agents=kwargs['max_agents'] or default_game_config.max_agents,
             min_agents=kwargs['min_agents'] or default_game_config.min_agents,
-            max_landmarks=kwargs['max_landmarks'] or default_game_config.max_landmarks,
-            min_landmarks=kwargs['min_landmarks'] or default_game_config.min_landmarks,
+            max_preys=kwargs['max_preys'] or default_game_config.max_preys,
+            min_preys=kwargs['min_preys'] or default_game_config.min_preys,
             num_shapes=kwargs['num_shapes'] or default_game_config.num_shapes,
             num_colors=kwargs['num_colors'] or default_game_config.num_colors,
             use_utterances=not kwargs['no_utterances'],
