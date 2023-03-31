@@ -133,7 +133,7 @@ class AgentModule(nn.Module):
                 if self.using_utterances:
                     timesteps[-1]['utterances'] = utterances
             locations0.append(game.locations[0].tolist())
-        if self.using_draw:
+        if False:
             self.draw_game(locations0, game)
         return self.total_cost, timesteps
 
