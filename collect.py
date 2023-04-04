@@ -8,9 +8,7 @@ import configs
 
 from kmeans_pytorch import kmeans, kmeans_predict
 
-
-
-def recordGameData(num_agent, num_prey):
+def recordGameData(agent, num_agent, num_prey):
     agent = torch.load('models/29-03-2023 1622 easy1211.pt')
     agent.reset()
     agent.train(False)
@@ -32,7 +30,7 @@ def getGameMetrics(path):
     metric = torch.Tensor(gamedata.size()[0],2)
     for i in range(gamedata.size()[0]):
         agents = gamedata[i,:num_agent,:]
-        metric[i,0] = torch.mean(torch.cdist(agents,gamedata[i,num_prey+num_agent-1:,:],1))
+        metric[i,0] = torch.mean(torch.min(torch.cdist(agents,gamedata[i,num_agent:,:],1),1)[0])
         metric[i,1] = torch.mean(torch.cdist(agents,agents,1))
     torch.save(metric, f"data/metric{path}")
 
@@ -40,7 +38,7 @@ def kcluster(path, num_clusters):
     file = torch.load(f'data/{path}')
     device = torch.device('cpu')
     result = kmeans(
-    X=file, num_clusters=num_clusters, distance='euclidean', device=device
+        X=file, num_clusters=num_clusters, distance='euclidean', device=device
     )
     torch.save(result, f'data/cluster{path}')
 
@@ -67,10 +65,6 @@ def visualizeClusters(path):
     plt.tight_layout()
     plt.show()
 
-# recordGameData(2,2)
-# getGameMetrics('22.pt')
-# kcluster('metric31.pt', 6)
-# visualizeClusters('metric31.pt')
 
 def pipeline(num_agent, num_prey, num_cluster):
     kcluster(f'metric{num_agent}{num_prey}.pt',num_cluster)
@@ -96,9 +90,10 @@ def visualizeMultiple(paths):
             linewidths=2
         )
         ax.axis([torch.min(x[:,0])-1, torch.max(x[:,0])+1, torch.min(x[:,1])-1, torch.max(x[:,1])+1])
-        ax.set_title("mean distance agent to prey")
-        ax.set_ylabel("mean distance between agents")
+        ax.set_title(path)
+        ax.set_xlabel("μ dist agents to prey")
+        ax.set_ylabel("μ dist between agents")
+    fig.tight_layout()
     plt.show()
 
 visualizeMultiple(['metric21.pt','metric22.pt', 'metric31.pt', 'metric32.pt'])
-#pipeline(2,2,6)

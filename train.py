@@ -51,7 +51,7 @@ def main():
     print(training_config)
     print(game_config)
     print(agent_config)
-    agent = AgentModule(agent_config)
+    agent = torch.load('models/30-03-2023 1414 hard3412.pt')
     if training_config.use_cuda:
         agent.cuda()
     optimizer = RMSprop(agent.parameters(), lr=training_config.learning_rate)

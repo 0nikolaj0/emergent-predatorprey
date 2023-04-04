@@ -6,7 +6,7 @@ from datetime import datetime as time
 
 NOW = time.now()
 
-DEFAULT_BATCH_SIZE = 512
+DEFAULT_BATCH_SIZE = 1
 DEFAULT_NUM_EPOCHS = 100
 DEFAULT_LR = 5e-4
 SAVE_MODEL = True

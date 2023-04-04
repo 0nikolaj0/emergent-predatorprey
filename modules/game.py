@@ -193,22 +193,25 @@ class GameModule(nn.Module):
         relative_goal_locs = self.goals.unsqueeze(1)[:,:,:,:2] - self.locations.unsqueeze(2)[:, :self.num_agents, :, :]
         goal_agents = self.goals.unsqueeze(1)[:,:,:,2:].expand_as(relative_goal_locs)[:,:,:,-1:]
         relative_goals =  torch.cat((relative_goal_locs, goal_agents), dim=3)
-        return torch.sum(
-                torch.sqrt(
-                    torch.sum(
-                        torch.pow(
-                            goal_predictions - relative_goals,
-                            2),
-                        -1)
+        try:
+            return torch.sum(
+                    torch.sqrt(
+                        torch.sum(
+                            torch.pow(
+                                goal_predictions - relative_goals,
+                                2),
+                            -1)
+                        )
                     )
-                )
+        except:
+            return 0
 
     """
     Computes the total cost agents get from moving
     """
     def compute_movement_cost(self, movements):
         clone = torch.abs(movements.clone())
-        return torch.sum(torch.sqrt(torch.sum(torch.pow(clone, 2), -1)))
+        return -torch.sum(torch.sqrt(torch.sum(torch.pow(clone, 2), -1)))
     
     def compute_collision_cost(self): #penalty for agents being close to one another
         slice = self.locations[:,:self.num_agents,:].clone()
