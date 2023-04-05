@@ -211,11 +211,11 @@ class GameModule(nn.Module):
     """
     def compute_movement_cost(self, movements):
         clone = torch.abs(movements.clone())
-        return -torch.sum(torch.sqrt(torch.sum(torch.pow(clone, 2), -1)))
+        return torch.sum(torch.sqrt(torch.sum(torch.pow(clone, 2), -1)))
     
     def compute_collision_cost(self): #penalty for agents being close to one another
         slice = self.locations[:,:self.num_agents,:].clone()
-        return torch.sum(torch.cdist(slice,slice,1)) #computes the distance from each agent to each other agent
+        return -torch.sum(torch.cdist(slice,slice,1)) #computes the distance from each agent to each other agent
                                                      #then sums all these distances
                 
     def get_avg_agent_to_goal_distance(self):

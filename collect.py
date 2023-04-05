@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import numpy as np
 import matplotlib.pyplot as plt
 
 from modules.game import GameModule
@@ -8,8 +9,8 @@ import configs
 
 from kmeans_pytorch import kmeans, kmeans_predict
 
-def recordGameData(agent, num_agent, num_prey):
-    agent = torch.load('models/29-03-2023 1622 easy1211.pt')
+def recordGameData(num_agent, num_prey):
+    agent = torch.load('models/29-03-2023 1622  easy1211.pt')
     agent.reset()
     agent.train(False)
 
@@ -21,6 +22,7 @@ def recordGameData(agent, num_agent, num_prey):
     data = torch.Tensor(configs.DEFAULT_TIME_HORIZON, con.batch_size, num_agent+num_prey, 2)
     for val in range(configs.DEFAULT_TIME_HORIZON):
         data[val] = timesteps[val]['locations']
+    #print(data.size())
     torch.save(data, f"data/{num_agent}{num_prey}.pt")
 
 def getGameMetrics(path):
@@ -96,4 +98,23 @@ def visualizeMultiple(paths):
     fig.tight_layout()
     plt.show()
 
-visualizeMultiple(['metric21.pt','metric22.pt', 'metric31.pt', 'metric32.pt'])
+def plotLosses(path):
+    fig, ax = plt.subplots()
+    data = np.load(f'lossdata/{path}.npy')
+    min_agents = int(path[0])
+    max_agents = int(path[1])
+    min_preys = int(path[2])
+    max_preys = int(path[3])
+    num_epochs = int(path[4:])
+
+    for a in range(min_agents, max_agents + 1):
+        for l in range(min_preys, max_preys + 1):
+            plt.plot(np.arange(num_epochs), data[a-1][l-1], label=f"num_agents: {a} num_prey: {l}")
+    ticks = np.arange(0,num_epochs,1)
+    ax.set_xticks(ticks)
+    plt.show()
+
+plotLosses('12114')
+#visualizeMultiple(['metric21.pt','metric22.pt', 'metric31.pt', 'metric32.pt'])
+#x = torch.load('data/clustermetric21.pt')
+#print(x)

@@ -7,6 +7,7 @@ import configs
 from modules.agent import AgentModule
 from modules.game import GameModule
 from collections import defaultdict
+import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description="Trains the agents for cooperative communication task")
 parser.add_argument('--no-utterances', action='store_true', help='if specified disables the communications channel (default enabled)')
@@ -58,6 +59,7 @@ def main():
     scheduler = ReduceLROnPlateau(optimizer, 'min', verbose=True, cooldown=5)
     losses = defaultdict(lambda:defaultdict(list))
     dists = defaultdict(lambda:defaultdict(list))
+    l = np.zeros((game_config.max_agents, game_config.max_preys, training_config.num_epochs))
     # torch.autograd.set_detect_anomaly(True)
     for epoch in range(training_config.num_epochs):
         num_agents = np.random.randint(game_config.min_agents, game_config.max_agents+1)
@@ -72,6 +74,12 @@ def main():
         per_agent_loss = total_loss.data[0] / num_agents / game_config.batch_size
         losses[num_agents][num_preys].append(per_agent_loss)
 
+        l[num_agents-1][num_preys-1][epoch] = per_agent_loss
+        for i in range(game_config.max_agents):
+            for k in range(game_config.max_preys):
+                if (i+1, k+1) != (num_agents,num_preys):
+                    l[i][k][epoch] = l[i][k][epoch-1]
+
         dist = game.get_avg_agent_to_goal_distance()
         avg_dist = dist.data.item() / num_agents / game_config.batch_size
         dists[num_agents][num_preys].append(avg_dist)
@@ -85,8 +93,10 @@ def main():
             scheduler.step(losses[game_config.max_agents][game_config.max_preys][-1])
 
     if training_config.save_model:
+        np.save(f'lossdata/{game_config.min_agents}{game_config.max_agents}{game_config.min_preys}{game_config.max_preys}{training_config.num_epochs}', l)
         torch.save(agent, training_config.save_model_file)
         print("Saved agent model weights at %s" % training_config.save_model_file)
+        
     """
     import code
     code.interact(local=locals())
