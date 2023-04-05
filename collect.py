@@ -111,6 +111,7 @@ def plotLosses(path):
         for l in range(min_preys, max_preys + 1):
             plt.plot(np.arange(num_epochs), data[a-1][l-1], label=f"num_agents: {a} num_prey: {l}")
     ticks = np.arange(0,num_epochs,1)
+    plt.legend(loc="upper left")
     ax.set_xticks(ticks)
     plt.show()
 

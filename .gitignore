@@ -7,5 +7,6 @@ mypy.ini
 *.pt
 *.out
 *.pyc
+*.npy
 venv/
 docker/
