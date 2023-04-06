@@ -2,6 +2,7 @@ import torch
 from modules.game import GameModule
 from configs import default_game_config, get_game_config
 import code
+import visualize
 
 
 config = {
@@ -23,4 +24,3 @@ agent.reset()
 agent.train(False)
 game = GameModule(default_game_config, 3, 2)
 agent(game)
-#code.interact(local=locals())
