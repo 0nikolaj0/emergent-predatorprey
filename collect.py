@@ -9,8 +9,8 @@ import configs
 
 from kmeans_pytorch import kmeans, kmeans_predict
 
-def recordGameData(num_agent, num_prey):
-    agent = torch.load('models/29-03-2023 1622  easy1211.pt')
+def recordGameData(num_agent, num_prey, save=False):
+    agent = torch.load('models/05-04-2023 1529 easy1211.pt')
     agent.reset()
     agent.train(False)
 
@@ -22,27 +22,37 @@ def recordGameData(num_agent, num_prey):
     data = torch.Tensor(configs.DEFAULT_TIME_HORIZON, con.batch_size, num_agent+num_prey, 2)
     for val in range(configs.DEFAULT_TIME_HORIZON):
         data[val] = timesteps[val]['locations']
-    #print(data.size())
-    torch.save(data, f"data/{num_agent}{num_prey}.pt")
+    if save:
+        torch.save(data, f"data/{num_agent}{num_prey}.pt")
+    return data
 
-def getGameMetrics(path):
-    num_agent = int(path[0])
-    num_prey  = int(path[1])
-    gamedata = torch.flatten(torch.load(f'data/{path}'),end_dim=1)
-    metric = torch.Tensor(gamedata.size()[0],2)
-    for i in range(gamedata.size()[0]):
-        agents = gamedata[i,:num_agent,:]
-        metric[i,0] = torch.mean(torch.min(torch.cdist(agents,gamedata[i,num_agent:,:],1),1)[0])
-        metric[i,1] = torch.mean(torch.cdist(agents,agents,1))
-    torch.save(metric, f"data/metric{path}")
+def getGameMetrics(paths, save=False):
+    g = torch.flatten(torch.load(f'data/{paths[0]}'),end_dim=1)
+    full = torch.Tensor(len(paths),g.size()[0],2)
+    for ind, path in enumerate(paths):
+        num_agent = int(path[0])
+        num_prey  = int(path[1])
+        gamedata = torch.flatten(torch.load(f'data/{path}'),end_dim=1)
+        metric = torch.Tensor(gamedata.size()[0],2)
+        for i in range(gamedata.size()[0]):
+            agents = gamedata[i,:num_agent,:]
+            metric[i,0] = torch.mean(torch.min(torch.cdist(agents,gamedata[i,num_agent:,:],1),1)[0])
+            metric[i,1] = torch.mean(torch.cdist(agents,agents,1))
+        full[ind] = metric
+    result = full.flatten(end_dim=1)
+    if save:
+        torch.save(result, f"data/metric{paths}.pt")
+    return result
 
-def kcluster(path, num_clusters):
+def kcluster(path, num_clusters, save=False):
     file = torch.load(f'data/{path}')
     device = torch.device('cpu')
     result = kmeans(
         X=file, num_clusters=num_clusters, distance='euclidean', device=device
     )
-    torch.save(result, f'data/cluster{path}')
+    if save:
+        torch.save(result, f'data/cluster{path}')
+    return result
 
 def visualizeClusters(path):
     f1 = torch.load(f'data/{path}')
@@ -110,12 +120,21 @@ def plotLosses(path):
     for a in range(min_agents, max_agents + 1):
         for l in range(min_preys, max_preys + 1):
             plt.plot(np.arange(num_epochs), data[a-1][l-1], label=f"num_agents: {a} num_prey: {l}")
-    ticks = np.arange(0,num_epochs,1)
+    ticks = np.arange(0,num_epochs+1,num_epochs/10)
     plt.legend(loc="upper left")
     ax.set_xticks(ticks)
     plt.show()
 
-plotLosses('12114')
-#visualizeMultiple(['metric21.pt','metric22.pt', 'metric31.pt', 'metric32.pt'])
-#x = torch.load('data/clustermetric21.pt')
-#print(x)
+def predictCluster(pathc, pathg):
+    #gamedata = recordGameData(3,1)
+    metrics = getGameMetrics([pathg])
+    _, cluster_centers = torch.load(pathc)
+    
+    prediction = kmeans_predict(metrics, cluster_centers)
+    return pathg, prediction
+    
+
+
+
+x = predictCluster('data/clustermetricmultiple.pt', '31.pt')
+print(x)

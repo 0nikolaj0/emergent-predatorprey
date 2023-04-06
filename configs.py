@@ -7,7 +7,7 @@ from datetime import datetime as time
 NOW = time.now()
 
 DEFAULT_BATCH_SIZE = 512
-DEFAULT_NUM_EPOCHS = 4
+DEFAULT_NUM_EPOCHS = 100
 DEFAULT_LR = 5e-4
 SAVE_MODEL = True
 DEFAULT_MODEL_FILE = NOW.strftime("%d-%m-%Y %H%M") + '.pt'
