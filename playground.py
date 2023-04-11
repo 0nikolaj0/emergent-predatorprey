@@ -19,8 +19,9 @@ config = {
         'memory_size': default_game_config.memory_size
     }
 
-agent = torch.load('models/05-04-2023 1529 easy1211.pt')
+agent = torch.load('models/10-04-2023 1511 hard3412.pt')
 agent.reset()
 agent.train(False)
-game = GameModule(default_game_config, 3, 2)
+game = GameModule(default_game_config, 4, 2)
 agent(game)
+#code.interact(local=locals())

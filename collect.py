@@ -1,15 +1,31 @@
 import torch
-import torch.nn as nn
+import configs
 import numpy as np
+import torch.nn as nn
 import matplotlib.pyplot as plt
 
-from modules.game import GameModule
-
-import configs
-
+from modules.game   import GameModule
+from torchmetrics   import kl_divergence
 from kmeans_pytorch import kmeans, kmeans_predict
 
-def recordGameData(num_agent, num_prey, save=False):
+def record_game(num_agent, num_prey, save=False):
+    agent = torch.load('models/07-04-2023 1558 medium2312.pt')
+    agent.reset()
+    agent.train(False)
+
+    con = configs.default_game_config
+    game = GameModule(con, num_agent, num_prey)
+
+    _, timesteps = agent(game)
+
+    locationdata = torch.Tensor(configs.DEFAULT_TIME_HORIZON, con.batch_size, num_agent+num_prey, 2)
+    for val in range(configs.DEFAULT_TIME_HORIZON):
+        locationdata[val] = timesteps[val]['locations']
+    if save:
+        torch.save(locationdata, f"data/{num_agent}{num_prey}.pt")
+    return locationdata
+
+def record_game_utter(num_agent, num_prey, save=False):
     agent = torch.load('models/05-04-2023 1529 easy1211.pt')
     agent.reset()
     agent.train(False)
@@ -19,14 +35,16 @@ def recordGameData(num_agent, num_prey, save=False):
 
     _, timesteps = agent(game)
 
-    data = torch.Tensor(configs.DEFAULT_TIME_HORIZON, con.batch_size, num_agent+num_prey, 2)
+    locationdata = torch.Tensor(configs.DEFAULT_TIME_HORIZON, con.batch_size, num_agent+num_prey, 2)
+    utterdata = torch.Tensor(configs.DEFAULT_TIME_HORIZON, con.batch_size, num_agent, con.vocab_size)
     for val in range(configs.DEFAULT_TIME_HORIZON):
-        data[val] = timesteps[val]['locations']
+        locationdata[val] = timesteps[val]['locations']
+        utterdata[val] = timesteps[val]['utterances']
     if save:
-        torch.save(data, f"data/{num_agent}{num_prey}.pt")
-    return data
+        torch.save((locationdata, utterdata), f"data/{num_agent}{num_prey}utter.pt")
+    return locationdata, utterdata
 
-def getGameMetrics(paths, save=False):
+def get_game_metrics(paths, save=False):
     g = torch.flatten(torch.load(f'data/{paths[0]}'),end_dim=1)
     full = torch.Tensor(len(paths),g.size()[0],2)
     for ind, path in enumerate(paths):
@@ -54,7 +72,7 @@ def kcluster(path, num_clusters, save=False):
         torch.save(result, f'data/cluster{path}')
     return result
 
-def visualizeClusters(path):
+def visualize_clusters(path):
     f1 = torch.load(f'data/{path}')
     f2 = torch.load(f'data/cluster{path}')
     cluster_ids_x_und, cluster_centers_und = f2
@@ -80,9 +98,9 @@ def visualizeClusters(path):
 
 def pipeline(num_agent, num_prey, num_cluster):
     kcluster(f'metric{num_agent}{num_prey}.pt',num_cluster)
-    visualizeClusters(f'metric{num_agent}{num_prey}.pt')
+    visualize_clusters(f'metric{num_agent}{num_prey}.pt')
 
-def visualizeMultiple(paths):
+def visualize_multiple(paths):
     fig, axs = plt.subplots(2,2)
     for i, path in enumerate(paths):
         ax = axs.flat[i]
@@ -108,7 +126,7 @@ def visualizeMultiple(paths):
     fig.tight_layout()
     plt.show()
 
-def plotLosses(path):
+def plot_losses(path):
     fig, ax = plt.subplots()
     data = np.load(f'lossdata/{path}.npy')
     min_agents = int(path[0])
@@ -120,21 +138,22 @@ def plotLosses(path):
     for a in range(min_agents, max_agents + 1):
         for l in range(min_preys, max_preys + 1):
             plt.plot(np.arange(num_epochs), data[a-1][l-1], label=f"num_agents: {a} num_prey: {l}")
+
     ticks = np.arange(0,num_epochs+1,num_epochs/10)
     plt.legend(loc="upper left")
+    #ax.set_yscale('log')
     ax.set_xticks(ticks)
     plt.show()
 
-def predictCluster(pathc, pathg):
+def predict_cluster(pathc, pathg):
     #gamedata = recordGameData(3,1)
-    metrics = getGameMetrics([pathg])
+    metrics = get_game_metrics([pathg])
     _, cluster_centers = torch.load(pathc)
-    
+
     prediction = kmeans_predict(metrics, cluster_centers)
     return pathg, prediction
     
 
-
-
-x = predictCluster('data/clustermetricmultiple.pt', '31.pt')
-print(x)
+#visualizeClusters('metricmultiple.pt')
+#plotLosses('3412100')
+record_game_utter(2,1,save=True)
