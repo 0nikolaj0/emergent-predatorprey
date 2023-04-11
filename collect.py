@@ -4,11 +4,11 @@ import numpy as np
 import torch.nn as nn
 import matplotlib.pyplot as plt
 
-from modules.game   import GameModule
-from torchmetrics   import kl_divergence
-from kmeans_pytorch import kmeans, kmeans_predict
+from modules.game              import GameModule
+from torchmetrics.functional   import kl_divergence
+from kmeans_pytorch            import kmeans, kmeans_predict
 
-def record_game(num_agent, num_prey, save=False):
+def record_game(num_agent, num_prey, save=False): #records game locations for a single forward call
     agent = torch.load('models/07-04-2023 1558 medium2312.pt')
     agent.reset()
     agent.train(False)
@@ -25,8 +25,8 @@ def record_game(num_agent, num_prey, save=False):
         torch.save(locationdata, f"data/{num_agent}{num_prey}.pt")
     return locationdata
 
-def record_game_utter(num_agent, num_prey, save=False):
-    agent = torch.load('models/05-04-2023 1529 easy1211.pt')
+def record_game_utter(num_agent, num_prey, save=False): #records game locations AND utterances for a single forward call
+    agent = torch.load('models/07-04-2023 1558 medium2312.pt')
     agent.reset()
     agent.train(False)
 
@@ -41,13 +41,13 @@ def record_game_utter(num_agent, num_prey, save=False):
         locationdata[val] = timesteps[val]['locations']
         utterdata[val] = timesteps[val]['utterances']
     if save:
-        torch.save((locationdata, utterdata), f"data/{num_agent}{num_prey}utter.pt")
+        torch.save((locationdata, utterdata), f"data/utter/{num_agent}{num_prey}utter.pt")
     return locationdata, utterdata
 
-def get_game_metrics(paths, save=False):
-    g = torch.flatten(torch.load(f'data/{paths[0]}'),end_dim=1)
-    full = torch.Tensor(len(paths),g.size()[0],2)
-    for ind, path in enumerate(paths):
+def get_game_metrics(paths, save=False): #for each step in a game in a batch, computes the metrics
+    g = torch.flatten(torch.load(f'data/{paths[0]}'),end_dim=1) #we define 2 metrics for a game:
+    full = torch.Tensor(len(paths),g.size()[0],2)               #-mean of distance between agents
+    for ind, path in enumerate(paths):                          #-mean of distance to the closest prey for each agent
         num_agent = int(path[0])
         num_prey  = int(path[1])
         gamedata = torch.flatten(torch.load(f'data/{path}'),end_dim=1)
@@ -62,7 +62,7 @@ def get_game_metrics(paths, save=False):
         torch.save(result, f"data/metric{paths}.pt")
     return result
 
-def kcluster(path, num_clusters, save=False):
+def kcluster(path, num_clusters, save=False): #clusters game metrics
     file = torch.load(f'data/{path}')
     device = torch.device('cpu')
     result = kmeans(
@@ -72,7 +72,7 @@ def kcluster(path, num_clusters, save=False):
         torch.save(result, f'data/cluster{path}')
     return result
 
-def visualize_clusters(path):
+def visualize_clusters(path): #visualizes clustered game metrics
     f1 = torch.load(f'data/{path}')
     f2 = torch.load(f'data/cluster{path}')
     cluster_ids_x_und, cluster_centers_und = f2
@@ -100,7 +100,7 @@ def pipeline(num_agent, num_prey, num_cluster):
     kcluster(f'metric{num_agent}{num_prey}.pt',num_cluster)
     visualize_clusters(f'metric{num_agent}{num_prey}.pt')
 
-def visualize_multiple(paths):
+def visualize_multiple(paths): #visualizes multiple clustered game metrics
     fig, axs = plt.subplots(2,2)
     for i, path in enumerate(paths):
         ax = axs.flat[i]
@@ -126,7 +126,7 @@ def visualize_multiple(paths):
     fig.tight_layout()
     plt.show()
 
-def plot_losses(path):
+def plot_losses(path): #plots losses for each epoch from a file
     fig, ax = plt.subplots()
     data = np.load(f'lossdata/{path}.npy')
     min_agents = int(path[0])
@@ -145,15 +145,16 @@ def plot_losses(path):
     ax.set_xticks(ticks)
     plt.show()
 
-def predict_cluster(pathc, pathg):
-    #gamedata = recordGameData(3,1)
+def predict_cluster(pathc, pathg): #for a game location data file, computes the assigned cluster for each gamestep in the data
     metrics = get_game_metrics([pathg])
     _, cluster_centers = torch.load(pathc)
-
     prediction = kmeans_predict(metrics, cluster_centers)
     return pathg, prediction
-    
 
+def kl_diverg():
+    return
+    
 #visualizeClusters('metricmultiple.pt')
 #plotLosses('3412100')
-record_game_utter(2,1,save=True)
+#record_game_utter(2,1,save=True)
+record_game_utter(3,2,save=True)
