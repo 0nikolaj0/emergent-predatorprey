@@ -8,5 +8,6 @@ mypy.ini
 *.out
 *.pyc
 *.npy
+*.json
 venv/
 docker/
