@@ -1,3 +1,4 @@
+import code
 import torch
 import configs
 import numpy as np
@@ -26,7 +27,7 @@ def record_game(num_agent, num_prey, save=False): #records game locations for a 
     return locationdata
 
 def record_game_utter(num_agent, num_prey, save=False): #records game locations AND utterances for a single forward call
-    agent = torch.load('models/07-04-2023 1558 medium2312.pt')
+    agent = torch.load('models/14-04-2023 1417 easy1211.pt')
     agent.reset()
     agent.train(False)
 
@@ -99,8 +100,8 @@ def visualize_clusters(path): #visualizes clustered game metrics
 
 
 def pipeline(num_agent, num_prey, num_cluster):
-    kcluster(f'metric{num_agent}{num_prey}.pt',num_cluster)
-    visualize_clusters(f'metric{num_agent}{num_prey}.pt')
+    loc, utter = record_game_utter(num_agent, num_prey)
+
 
 def visualize_multiple(paths): #visualizes multiple clustered game metrics
     fig, axs = plt.subplots(2,2)
@@ -161,10 +162,12 @@ def complete_data_set():
     return torch.flatten(locd, end_dim=1), torch.flatten(utterd, end_dim=1), metric
     
 #visualize_clusters('metricm.pt')
-plot_losses(['2312100new'])
+#plot_losses(['2312100new'])
 #record_game_utter(2,1,save=True)
-#record_game_utter(3,2,save=True)
+#record_game_utter(2,1,save=True)
 #get_game_metrics(['21utter.pt', '22utter.pt', '31utter.pt', '32utter.pt'],save=True)
+metr = get_game_metrics(['21utter.pt'])
+clus = kcluster(metr)
 #x,y,z = complete_data_set()
 #print(x.size(),y.size(),z.size())
 #visualize_multiple(['metric21.pt', 'metric22.pt', 'metric31.pt', 'metric32.pt'])
@@ -172,3 +175,4 @@ plot_losses(['2312100new'])
 #visualize_clusters('metricm.pt')
 #x = torch.load(f'data/utter/21utter.pt')
 #print(x.size())
+#code.interact(local=locals())
