@@ -1,7 +1,5 @@
 import torch
 import torch.nn as nn
-import configs
-import constants
 
 from modules.processing import ProcessingModule
 from modules.gumbel_softmax import GumbelSoftmax
@@ -26,23 +24,22 @@ class ActionModule(nn.Module):
         self.movement_chooser = nn.Sequential(
                 nn.Linear(config.action_processor.hidden_size, config.action_processor.hidden_size),
                 nn.ELU(),
-                nn.Linear(config.action_processor.hidden_size, 2), #5 nodes, since we have 5 different movements: left,right,up,down or stay
-                nn.Tanh())                                         #could become 9 if we add diagonal movements
-        self.movement_chooser.requires_grad_()
+                nn.Linear(config.action_processor.hidden_size, config.movement_dim_size),
+                nn.Tanh())
+
         if self.using_utterances:
             self.utterance_chooser = nn.Sequential(
                     nn.Linear(config.action_processor.hidden_size, config.hidden_size),
-                    nn.ELU(), 
+                    nn.ELU(),
                     nn.Linear(config.hidden_size, config.vocab_size))
             self.gumbel_softmax = GumbelSoftmax(config.use_cuda)
-
 
     def forward(self, physical, goal, mem, training, utterance=None):
         goal_processed, _ = self.goal_processor(goal, mem)
         if self.using_utterances:
             x = torch.cat([physical.squeeze(1), utterance.squeeze(1), goal_processed], 1).squeeze(1)
         else:
-            x = torch.cat([physical.squeeze(), goal_processed], 1).squeeze(1)
+            x = torch.cat([physical.squeeze(0), goal_processed], 1).squeeze(1)
         processed, mem = self.processor(x, mem)
         movement = self.movement_chooser(processed)
         if self.using_utterances:
@@ -52,7 +49,7 @@ class ActionModule(nn.Module):
             else:
                 utterance = torch.zeros(utter.size())
                 if self.using_cuda:
-                    utterance = utterance.cuda() #tensor([0.01,0.05])
+                    utterance = utterance.cuda()
                 max_utter = utter.max(1)[1]
                 max_utter = max_utter.data[0]
                 utterance[0, max_utter] = 1
@@ -60,5 +57,3 @@ class ActionModule(nn.Module):
             utterance = None
         final_movement = (movement * 2 * self.movement_step_size) - self.movement_step_size
         return final_movement, utterance, mem
-    
-

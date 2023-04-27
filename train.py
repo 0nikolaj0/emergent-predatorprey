@@ -20,8 +20,8 @@ parser.add_argument('--num-shapes', '-s', type=int, help='if specified sets numb
 parser.add_argument('--num-colors', '-c', type=int, help='if specified sets number of shapes (default 3)')
 parser.add_argument('--max-agents', type=int, help='if specified sets maximum number of agents in each episode (default 3)')
 parser.add_argument('--min-agents', type=int, help='if specified sets minimum number of agents in each episode (default 1)')
-parser.add_argument('--max-preys', type=int, help='if specified sets maximum number of preys in each episode (default 3)')
-parser.add_argument('--min-preys', type=int, help='if specified sets minimum number of preys in each episode (default 1)')
+parser.add_argument('--max-prey', type=int, help='if specified sets maximum number of preys in each episode (default 3)')
+parser.add_argument('--min-prey', type=int, help='if specified sets minimum number of preys in each episode (default 1)')
 parser.add_argument('--vocab-size', '-v', type=int, help='if specified sets maximum vocab size in each episode (default 6)')
 parser.add_argument('--world-dim', '-w', type=int, help='if specified sets the side length of the square grid where all agents and preys spawn(default 16)')
 parser.add_argument('--oov-prob', '-o', type=int, help='higher value penalize uncommon words less when penalizing words (default 6)')
@@ -33,7 +33,7 @@ parser.add_argument('--use-cuda', action='store_true', help='if specified enable
 
 def print_losses(epoch, losses, dists, game_config):
     for a in range(game_config.min_agents, game_config.max_agents + 1):
-        for l in range(game_config.min_preys, game_config.max_preys + 1):
+        for l in range(game_config.min_prey, game_config.max_prey + 1):
             loss = losses[a][l][-1] if len(losses[a][l]) > 0 else 0
             min_loss = min(losses[a][l]) if len(losses[a][l]) > 0 else 0
 
@@ -59,26 +59,30 @@ def main():
     scheduler = ReduceLROnPlateau(optimizer, 'min', verbose=True, cooldown=5)
     losses = defaultdict(lambda:defaultdict(list))
     dists = defaultdict(lambda:defaultdict(list))
-    l = np.zeros((game_config.max_agents, game_config.max_preys, training_config.num_epochs))
+    l = np.zeros((game_config.max_agents, game_config.max_prey, training_config.num_epochs))
+    u = torch.Tensor(training_config.num_epochs,4,game_config.batch_size,game_config.vocab_size)
     # torch.autograd.set_detect_anomaly(True)
     for epoch in range(training_config.num_epochs):
         num_agents = np.random.randint(game_config.min_agents, game_config.max_agents+1)
-        num_preys = np.random.randint(game_config.min_preys, game_config.max_preys+1)
+        num_preys = np.random.randint(game_config.min_prey, game_config.max_prey+1)
         agent.reset()
         game = GameModule(game_config, num_agents, num_preys)
         if training_config.use_cuda:
             game.cuda()
         optimizer.zero_grad()
 
-        total_loss, _ = agent(game)
+        total_loss, timesteps = agent(game)
         per_agent_loss = total_loss.data[0] / num_agents / game_config.batch_size
         losses[num_agents][num_preys].append(per_agent_loss)
 
         l[num_agents-1][num_preys-1][epoch] = per_agent_loss
         for i in range(game_config.max_agents):
-            for k in range(game_config.max_preys):
+            for k in range(game_config.max_prey):
                 if (i+1, k+1) != (num_agents,num_preys):
                     l[i][k][epoch] = l[i][k][epoch-1]
+
+        for i in range(4):
+            u[epoch,i] = torch.sum(timesteps[int(i/4*agent_config.time_horizon)]['utterances'],1) / num_agents
 
         dist = game.get_avg_agent_to_goal_distance()
         avg_dist = dist.data.item() / num_agents / game_config.batch_size
@@ -89,11 +93,12 @@ def main():
         total_loss.backward()
         optimizer.step()
 
-        if num_agents == game_config.max_agents and num_preys == game_config.max_preys:
-            scheduler.step(losses[game_config.max_agents][game_config.max_preys][-1])
+        if num_agents == game_config.max_agents and num_preys == game_config.max_prey:
+            scheduler.step(losses[game_config.max_agents][game_config.max_prey][-1])
 
     if training_config.save_model:
-        np.save(f'lossdata/{game_config.min_agents}{game_config.max_agents}{game_config.min_preys}{game_config.max_preys}{training_config.num_epochs}', l)
+        np.save(f'trainingdata/{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}', l)
+        torch.save(u, f'trainingdata/utter{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}')
         torch.save(agent, training_config.save_model_file)
         print("Saved agent model weights at %s" % training_config.save_model_file)
         

@@ -7,10 +7,6 @@ from modules.goal_predicting import GoalPredictingProcessingModule
 from modules.action import ActionModule
 from modules.word_counting import WordCountingModule
 
-from matplotlib import pyplot as plt
-
-import numpy as np
-
 
 """
     The AgentModule is the general module that's responsible for the execution of
@@ -39,7 +35,6 @@ class AgentModule(nn.Module):
         self.using_utterances = config.use_utterances
         self.penalizing_words = config.penalize_words
         self.using_cuda = config.use_cuda
-        self.using_draw = config.use_draw
         self.time_horizon = config.time_horizon
         self.movement_dim_size = config.movement_dim_size
         self.vocab_size = config.vocab_size
@@ -100,7 +95,6 @@ class AgentModule(nn.Module):
 
     def forward(self, game):
         timesteps = []
-        locations0 = []
         for t in range(self.time_horizon):
             movements = Variable(self.Tensor(game.batch_size, game.num_entities, self.movement_dim_size).zero_())
             possible_movements = self.Tensor([[-1,0],[1,0],[0,-1],[0,1]])
@@ -113,7 +107,6 @@ class AgentModule(nn.Module):
             for prey in range(game.num_agents,game.num_entities):
                 ind = torch.randint(4,size=(1,)).item()
                 movements[:,prey,:] = possible_movements[ind]
-                #game.locations[:,prey,:] += possible_movements[ind]    
 
             for agent in range(game.num_agents):
                 physical_feat = self.get_physical_feat(game, agent)
@@ -125,43 +118,11 @@ class AgentModule(nn.Module):
                 cost = cost + self.word_counter(utterances)
 
             self.total_cost = self.total_cost + cost
-            if not self.training:
+            if self.training:
                 timesteps.append({
                     'locations': game.locations,
                     'movements': movements,
                     'loss': cost})
                 if self.using_utterances:
                     timesteps[-1]['utterances'] = utterances
-            locations0.append(game.locations[0].tolist())
-        if False:
-            self.draw_game(locations0, game)
         return self.total_cost, timesteps
-
-
-
-    def draw_game(self, lx, game):
-        fig, axs = plt.subplots(4,4)
-        plt.xlim([-3.5,20])
-        plt.ylim([-3.5,20])
-        ticks = np.arange(-3.5,20,1)
-        colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
-        size = 0
-        for index in range(16):
-            loc = lx[index]
-            ax = axs.flat[index]
-            ax.set_title(index)
-            ax.set_xlim([-3.5,20])
-            ax.set_ylim([-3.5,20])
-            for i in range(game.num_agents):
-                ax.scatter(loc[i][0], loc[i][1], s=70, c=colors[i], marker=f"$a{i}$")
-            for k in range(game.num_agents, game.num_prey+game.num_agents):
-                ax.scatter(loc[k][0], loc[k][1], s=70, c=colors[k], marker=f"$p{k-game.num_agents}$")
-            ax.grid(True)
-            size += 10
-        fig.set_figheight(8)
-        fig.set_figwidth(12)
-        plt.grid(visible=True, axis='both')
-        plt.tight_layout()
-        #axs.set_xticks(ticks)
-        #axs.set_yticks(ticks)
-        plt.show()

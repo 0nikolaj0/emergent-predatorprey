@@ -2,15 +2,12 @@ import pdb
 from typing import NamedTuple, Any, List
 import numpy as np
 import constants
-from datetime import datetime as time
-
-NOW = time.now()
 
 DEFAULT_BATCH_SIZE = 512
 DEFAULT_NUM_EPOCHS = 100
 DEFAULT_LR = 5e-4
 SAVE_MODEL = True
-DEFAULT_MODEL_FILE = 'models/' + NOW.strftime("%d-%m-%Y %H%M") + '.pt'
+DEFAULT_MODEL_FILE = 'models/latest.pt'
 
 DEFAULT_HIDDEN_SIZE = 256
 DEFAULT_DROPOUT = 0.1
@@ -18,21 +15,18 @@ DEFAULT_FEAT_VEC_SIZE = 256
 DEFAULT_TIME_HORIZON = 16
 
 USE_UTTERANCES = True
-USE_VISIBILITY = True
-USE_OBSTACLES = False
-USE_DRAW = False
-PENALIZE_WORDS = False
+PENALIZE_WORDS = True
 DEFAULT_VOCAB_SIZE = 20
 DEFAULT_OOV_PROB = 1
+DEFAULT_VISIBILITY = 16
 
 DEFAULT_WORLD_DIM = 16
 MAX_AGENTS = 3
-MAX_PREYS = 2
-MIN_AGENTS = 2
-MIN_PREYS = 1
+MAX_PREY = 2
+MIN_AGENTS = 3
+MIN_PREY = 2
 NUM_COLORS = 3
 NUM_SHAPES = 2
-DEFAULT_VISIBILITY = 16
 
 TrainingConfig = NamedTuple('TrainingConfig', [
     ('num_epochs', int),
@@ -48,16 +42,12 @@ GameConfig = NamedTuple('GameConfig', [
     ('batch_size', int),
     ('world_dim', Any),
     ('max_agents', int),
-    ('max_preys', int),
+    ('max_prey', int),
     ('min_agents', int),
-    ('min_preys', int),
+    ('min_prey', int),
     ('num_shapes', int),
     ('num_colors', int),
     ('use_utterances', bool),
-    ('use_visibility', bool),
-    ('visibility', int),
-    ('use_obstacles', bool),
-    ('use_draw', bool),
     ('vocab_size', int),
     ('memory_size', int),
     ('use_cuda', bool),
@@ -91,7 +81,6 @@ ActionModuleConfig = NamedTuple("ActionModuleConfig", [
     ('movement_step_size', int),
     ('vocab_size', int),
     ('use_utterances', bool),
-    ('use_draw', bool),
     ('use_cuda', bool)
     ])
 
@@ -106,7 +95,6 @@ AgentModuleConfig = NamedTuple("AgentModuleConfig", [
     ('action_processor', ActionModuleConfig),
     ('word_counter', WordCountingModuleConfig),
     ('use_utterances', bool),
-    ('use_draw', bool),
     ('penalize_words', bool),
     ('use_cuda', bool)
     ])
@@ -129,16 +117,12 @@ default_game_config = GameConfig(
         DEFAULT_BATCH_SIZE,
         DEFAULT_WORLD_DIM,
         MAX_AGENTS,
-        MAX_PREYS,
+        MAX_PREY,
         MIN_AGENTS,
-        MIN_PREYS,
+        MIN_PREY,
         NUM_SHAPES,
         NUM_COLORS,
         USE_UTTERANCES,
-        USE_VISIBILITY,
-        DEFAULT_VISIBILITY,
-        USE_OBSTACLES,
-        USE_DRAW,
         DEFAULT_VOCAB_SIZE,
         DEFAULT_HIDDEN_SIZE,
         False
@@ -164,7 +148,6 @@ default_action_module_config = ActionModuleConfig(
         movement_step_size=constants.MOVEMENT_STEP_SIZE,
         vocab_size=DEFAULT_VOCAB_SIZE,
         use_utterances=USE_UTTERANCES,
-        use_draw=USE_DRAW,
         use_cuda=False)
 
 default_goal_predicting_module_config = GoalPredictingProcessingModuleConfig(
@@ -184,7 +167,6 @@ default_agent_config = AgentModuleConfig(
         goal_size=constants.GOAL_SIZE,
         vocab_size=DEFAULT_VOCAB_SIZE,
         use_utterances=USE_UTTERANCES,
-        use_draw=USE_DRAW,
         penalize_words=PENALIZE_WORDS,
         use_cuda=False)
 
@@ -204,15 +186,11 @@ def get_game_config(kwargs):
             world_dim=kwargs['world_dim'] or default_game_config.world_dim,
             max_agents=kwargs['max_agents'] or default_game_config.max_agents,
             min_agents=kwargs['min_agents'] or default_game_config.min_agents,
-            max_preys=kwargs['max_preys'] or default_game_config.max_preys,
-            min_preys=kwargs['min_preys'] or default_game_config.min_preys,
+            max_prey=kwargs['max_prey'] or default_game_config.max_prey,
+            min_prey=kwargs['min_prey'] or default_game_config.min_prey,
             num_shapes=kwargs['num_shapes'] or default_game_config.num_shapes,
             num_colors=kwargs['num_colors'] or default_game_config.num_colors,
             use_utterances=not kwargs['no_utterances'],
-            use_visibility=default_game_config.use_visibility,
-            visibility=default_game_config.visibility,
-            use_obstacles=default_game_config.use_obstacles,
-            use_draw=default_game_config.use_draw,
             vocab_size=kwargs['vocab_size'] or default_game_config.vocab_size,
             memory_size=default_game_config.memory_size,
             use_cuda=kwargs['use_cuda']
@@ -222,9 +200,8 @@ def get_agent_config(kwargs):
     vocab_size = kwargs['vocab_size'] or DEFAULT_VOCAB_SIZE
     use_utterances = (not kwargs['no_utterances'])
     use_cuda = kwargs['use_cuda']
-    penalize_words = PENALIZE_WORDS
+    penalize_words = kwargs['penalize_words']
     oov_prob = kwargs['oov_prob'] or DEFAULT_OOV_PROB
-    use_draw = USE_DRAW
     if use_utterances:
         feat_vec_size = DEFAULT_FEAT_VEC_SIZE*3
     else:
@@ -243,7 +220,6 @@ def get_agent_config(kwargs):
             movement_step_size=constants.MOVEMENT_STEP_SIZE,
             vocab_size=vocab_size,
             use_utterances=use_utterances,
-            use_draw=use_draw,
             use_cuda=use_cuda)
     word_counter = WordCountingModuleConfig(
             vocab_size=vocab_size,
@@ -261,7 +237,6 @@ def get_agent_config(kwargs):
             goal_size=default_agent_config.goal_size,
             vocab_size=vocab_size,
             use_utterances=use_utterances,
-            use_draw=use_draw,
             penalize_words=penalize_words,
             use_cuda=use_cuda
             )

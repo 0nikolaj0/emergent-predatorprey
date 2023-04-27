@@ -30,24 +30,19 @@ class GameModule(nn.Module):
     def __init__(self, config, num_agents, num_prey):
         super(GameModule, self).__init__()
 
-        self.Tensor = torch.cuda.FloatTensor if config.use_cuda else torch.FloatTensor
         self.batch_size = config.batch_size # scalar: num games in this batch
         self.using_utterances = config.use_utterances # bool: whether current batch allows utterances
-        self.using_visibility = config.use_visibility
-        self.visibility = config.visibility
         self.using_cuda = config.use_cuda
         self.num_agents = num_agents # scalar: number of agents in this batch
         self.num_prey = num_prey # scalar: number of prey in this batch
         self.num_entities = self.num_agents + self.num_prey # type: int
-        self.using_obstacles = config.use_obstacles
-        self.obstacles = self.Tensor([(5,5),(5,4),(5,3),(5,2),(5,1)]) #hardcoded obstacle for now
 
         if self.using_cuda:
             self.Tensor = torch.cuda.FloatTensor
         else:
             self.Tensor = torch.FloatTensor
 
-        locations = (torch.rand(self.batch_size, self.num_entities, 2) * config.world_dim).floor()
+        locations = torch.rand(self.batch_size, self.num_entities, 2) * config.world_dim
         colors = (torch.rand(self.batch_size, self.num_entities, 1) * config.num_colors).floor()
         shapes = (torch.rand(self.batch_size, self.num_entities, 1) * config.num_shapes).floor()
 
@@ -66,17 +61,17 @@ class GameModule(nn.Module):
         # [batch_size, num_entities, 2]
         self.physical = Variable(torch.cat((colors,shapes), 2).float())
 
+        #TODO: Bad for loop?
         for b in range(self.batch_size):
             goal_agents[b] = torch.unsqueeze(torch.randperm(self.num_agents),dim=1)
             
-        for b in range(self.batch_size): #for each agent, location of the prey goal that they want another agent to go to
+
+        for b in range(self.batch_size):
             goal_locations[b] = self.locations.data[b][goal_entities[b].squeeze()]
 
         # [batch_size, num_agents, 3]
         self.goals = Variable(torch.cat((goal_locations, goal_agents), 2))
-        self.goal_entities = Variable(goal_entities)
-        self.goal_locations = Variable(goal_locations)
-        self.goal_agents = Variable(goal_agents)
+        goal_agents = Variable(goal_agents)
 
 
         if self.using_cuda:
@@ -100,12 +95,17 @@ class GameModule(nn.Module):
 
         sort_idxs = torch.sort(self.goals[:,:,2])[1]
         self.sorted_goals = Variable(self.Tensor(self.goals.size()))
+        self.goal_entities = goal_entities
+        self.goal_locations = goal_locations
+        self.goal_agents = goal_agents
+        # TODO: Bad for loop?
         for b in range(self.batch_size):
             self.sorted_goals[b] = self.goals[b][sort_idxs[b]]
         self.sorted_goals = self.sorted_goals[:,:,:2]
+
         # [batch_size, num_agents, num_entities, 2]
         self.observations = self.locations.unsqueeze(1) - agent_baselines.unsqueeze(2)
-    
+
         new_obs = self.goals[:,:,:2] - agent_baselines
 
         # [batch_size, num_agents, 2] [batch_size, num_agents, 1]
@@ -122,23 +122,15 @@ class GameModule(nn.Module):
         - scalar: total cost of all games in the batch
     """
     def forward(self, movements, goal_predictions, utterances):
-        updated_movement = self.locations + movements
-        if self.using_obstacles:
-            for game in range(self.batch_size):
-                for entity in range(self.num_entities):
-                    location = updated_movement[game,entity]
-                    if location in self.obstacles:
-                        updated_movement[game,entity] -= movements[game,entity]
-        self.locations = updated_movement
+        self.locations = self.locations + movements
         agent_baselines = self.locations[:, :self.num_agents]
-        self.observations = self.locations.unsqueeze(1) - agent_baselines.unsqueeze(2)
-        if self.using_visibility:
-            for game in range(self.batch_size):
+        self.observations = self.locations.unsqueeze(1)- agent_baselines.unsqueeze(2)
+        for game in range(self.batch_size):
                 for agent in range(self.num_agents):
                     for entity in range(self.num_entities):
                         val = torch.sum(torch.abs(self.observations[game,agent,entity]))
-                        if val > self.visibility: #if entity is not within a predefined range from an agent
-                            self.observations[game,agent,entity] = self.Tensor([0,0]) #set its observation to [0,0]
+                        if val > configs.DEFAULT_VISIBILITY: #if entity is not within a predefined range from an agent
+                            self.observations[game,agent,entity] = torch.zeros(2) #zero its observation
         for b in range(self.batch_size): 
             self.goal_locations[b] = self.locations.data[b][self.goal_entities[b].squeeze()]
         self.goals = torch.cat((self.goal_locations, self.goal_agents), 2)
@@ -160,13 +152,13 @@ class GameModule(nn.Module):
         movement_cost = self.compute_movement_cost(movements)
         goal_pred_cost = self.compute_goal_pred_cost(goal_predictions)
         collision_cost = self.compute_collision_cost()
-        return physical_cost + movement_cost + goal_pred_cost + collision_cost
+        return physical_cost + goal_pred_cost + movement_cost + collision_cost
 
     """
     Computes the total cost agents get from being near their goals
-    agent locations are stored as [batch_size, num_agents + num_preys, entity_embed_size]
+    agent locations are stored as [batch_size, num_agents + num_prey, entity_embed_size]
     """
-    def compute_physical_cost(self): 
+    def compute_physical_cost(self):
         return 2*torch.sum(
                     torch.sqrt(
                         torch.sum(
@@ -176,6 +168,11 @@ class GameModule(nn.Module):
                             -1)
                         )
                     )
+    
+    def compute_collision_cost(self): #penalty for agents being close to one another
+        slice = self.locations[:,:self.num_agents,:].clone()
+        return -torch.sum(torch.cdist(slice,slice,1)) #computes the distance from each agent to each other agent
+                                                     #then sums all these distances
 
     """
     Computes the total cost agents get from predicting others' goals
@@ -188,36 +185,29 @@ class GameModule(nn.Module):
         observed_goals[., a_j, :] = a_j's goal with location relative to a_j
     Which means we want to build an observed_goals-like tensor but relative to each agent
         real_goal_locations[., a_i, a_j, :] = goals[., a_j, :] - locations[a_i]
+
+
     """
     def compute_goal_pred_cost(self, goal_predictions):
         relative_goal_locs = self.goals.unsqueeze(1)[:,:,:,:2] - self.locations.unsqueeze(2)[:, :self.num_agents, :, :]
         goal_agents = self.goals.unsqueeze(1)[:,:,:,2:].expand_as(relative_goal_locs)[:,:,:,-1:]
         relative_goals =  torch.cat((relative_goal_locs, goal_agents), dim=3)
-        try:
-            return torch.sum(
-                    torch.sqrt(
-                        torch.sum(
-                            torch.pow(
-                                goal_predictions - relative_goals,
-                                2),
-                            -1)
-                        )
+        return torch.sum(
+                torch.sqrt(
+                    torch.sum(
+                        torch.pow(
+                            goal_predictions - relative_goals,
+                            2),
+                        -1)
                     )
-        except:
-            return 0
+                )
 
     """
     Computes the total cost agents get from moving
     """
     def compute_movement_cost(self, movements):
-        clone = torch.abs(movements.clone())
-        return torch.sum(torch.sqrt(torch.sum(torch.pow(clone, 2), -1)))
-    
-    def compute_collision_cost(self): #penalty for agents being close to one another
-        slice = self.locations[:,:self.num_agents,:].clone()
-        return -torch.sum(torch.cdist(slice,slice,1)) #computes the distance from each agent to each other agent
-                                                     #then sums all these distances
-                
+        return torch.sum(torch.sqrt(torch.sum(torch.pow(movements, 2), -1)))
+
     def get_avg_agent_to_goal_distance(self):
         return torch.sum(
                     torch.sqrt(
