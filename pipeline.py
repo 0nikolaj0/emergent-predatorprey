@@ -122,7 +122,7 @@ def two_datas():
         for k, newv in enumerate(val):
             mean_utter[i][k] = newv / counter[i] / 3
     #print(torch.sum(mean_utter,1))
-    visualize_clusters(metrics2, clusters2, similar_points, closestloc1, closestloc2, 2, 3, mean_utter)
+    visualize_clusters(metrics2, clusters2, similar_points, closestloc1, closestloc2, 3, 3, mean_utter)
 
 two_datas()
 

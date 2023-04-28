@@ -152,7 +152,7 @@ class GameModule(nn.Module):
         movement_cost = self.compute_movement_cost(movements)
         goal_pred_cost = self.compute_goal_pred_cost(goal_predictions)
         collision_cost = self.compute_collision_cost()
-        return physical_cost + goal_pred_cost + movement_cost + collision_cost
+        return physical_cost + movement_cost + collision_cost
 
     """
     Computes the total cost agents get from being near their goals
