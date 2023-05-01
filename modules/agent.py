@@ -104,9 +104,17 @@ class AgentModule(nn.Module):
                 utterances = Variable(self.Tensor(game.batch_size, game.num_agents, self.vocab_size))
                 goal_predictions = Variable(self.Tensor(game.batch_size, game.num_agents, game.num_agents, self.goal_size))
 
-            for prey in range(game.num_agents,game.num_entities):
-                ind = torch.randint(4,size=(1,)).item()
-                movements[:,prey,:] = possible_movements[ind]
+            # for prey in range(game.num_agents,game.num_entities):
+            #     ind = torch.randint(4,size=(1,)).item()
+            #     movements[:,prey,:] = possible_movements[ind]
+
+            agentloc = game.locations[:,:game.num_agents,:].clone() #prey move away from nearest predator
+            predloc = game.locations[:,game.num_agents:,:].clone()
+            _, indices = torch.min(torch.cdist(agentloc,predloc,1),1)
+            for i, step in enumerate(indices):
+                for k, agent in enumerate(step):
+                    newv = -torch.sigmoid(game.locations[i,agent,:] - game.locations[i,k+game.num_agents,:])
+                    movements[i,k+game.num_agents,:] = newv
 
             for agent in range(game.num_agents):
                 physical_feat = self.get_physical_feat(game, agent)

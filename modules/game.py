@@ -150,8 +150,10 @@ class GameModule(nn.Module):
     def compute_cost(self, movements, goal_predictions, utterances=None):
         physical_cost = self.compute_physical_cost()
         movement_cost = self.compute_movement_cost(movements)
-        goal_pred_cost = self.compute_goal_pred_cost(goal_predictions)
         collision_cost = self.compute_collision_cost()
+        if self.using_utterances:
+            goal_pred_cost = self.compute_goal_pred_cost(goal_predictions)
+            return physical_cost + goal_pred_cost + movement_cost + collision_cost
         return physical_cost + movement_cost + collision_cost
 
     """
@@ -171,7 +173,7 @@ class GameModule(nn.Module):
     
     def compute_collision_cost(self): #penalty for agents being close to one another
         slice = self.locations[:,:self.num_agents,:].clone()
-        return -torch.sum(torch.cdist(slice,slice,1)) #computes the distance from each agent to each other agent
+        return torch.sum(torch.cdist(slice,slice,1)) #computes the distance from each agent to each other agent
                                                      #then sums all these distances
 
     """

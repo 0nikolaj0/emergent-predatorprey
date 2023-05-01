@@ -97,8 +97,8 @@ def pipeline(model, num_agent, num_prey, num_cluster):
     return torch.flatten(locd,end_dim=1).detach(), torch.flatten(utterd, end_dim=1).detach(), metrics.detach(), clusters
 
 def two_datas():
-    locd1, utterd1, metrics1, clusters1 = pipeline(torch.load('models/2324300.pt'),3,4,7)
-    locd2, utterd2, metrics2, clusters2 = pipeline(torch.load('models/2324300.pt'),3,4,7)
+    locd1, utterd1, metrics1, clusters1 = pipeline(torch.load('models/2324300.pt'),3,2,7)
+    locd2, utterd2, metrics2, clusters2 = pipeline(torch.load('models/2324300.pt'),3,2,7)
     cluster_ids_x_und, cluster_centers_und = clusters2
     cluster_ids_x = cluster_ids_x_und.detach()
     cluster_centers = cluster_centers_und.detach()

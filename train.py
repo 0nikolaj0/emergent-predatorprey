@@ -60,8 +60,9 @@ def main():
     losses = defaultdict(lambda:defaultdict(list))
     dists = defaultdict(lambda:defaultdict(list))
     l = np.zeros((game_config.max_agents, game_config.max_prey, training_config.num_epochs))
-    u = torch.Tensor(training_config.num_epochs,4,game_config.batch_size,game_config.vocab_size)
-    # torch.autograd.set_detect_anomaly(True)
+    d = np.zeros((game_config.max_agents, game_config.max_prey, training_config.num_epochs))
+    if agent_config.use_utterances:
+        u = torch.Tensor(training_config.num_epochs,4,game_config.batch_size,game_config.vocab_size)
     for epoch in range(training_config.num_epochs):
         num_agents = np.random.randint(game_config.min_agents, game_config.max_agents+1)
         num_preys = np.random.randint(game_config.min_prey, game_config.max_prey+1)
@@ -81,12 +82,19 @@ def main():
                 if (i+1, k+1) != (num_agents,num_preys):
                     l[i][k][epoch] = l[i][k][epoch-1]
 
-        for i in range(4):
-            u[epoch,i] = torch.sum(timesteps[int(i/4*agent_config.time_horizon)]['utterances'],1) / num_agents
+        if agent_config.use_utterances:
+            for i in range(4):
+                u[epoch,i] = torch.sum(timesteps[int(i/4*agent_config.time_horizon)]['utterances'],1) / num_agents
 
         dist = game.get_avg_agent_to_goal_distance()
         avg_dist = dist.data.item() / num_agents / game_config.batch_size
         dists[num_agents][num_preys].append(avg_dist)
+
+        d[num_agents-1][num_preys-1][epoch] = avg_dist
+        for i in range(game_config.max_agents):
+            for k in range(game_config.max_prey):
+                if (i+1, k+1) != (num_agents,num_preys):
+                    d[i][k][epoch] = d[i][k][epoch-1]
 
         print_losses(epoch, losses, dists, game_config)
 
@@ -98,7 +106,9 @@ def main():
 
     if training_config.save_model:
         np.save(f'trainingdata/{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}', l)
-        torch.save(u, f'trainingdata/utter{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}')
+        np.save(f'trainingdata/{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}distances', d)
+        if agent_config.use_utterances:
+            torch.save(u, f'trainingdata/utter{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}.pt')
         torch.save(agent, training_config.save_model_file)
         print("Saved agent model weights at %s" % training_config.save_model_file)
         
