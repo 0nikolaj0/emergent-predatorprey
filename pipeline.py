@@ -124,7 +124,7 @@ def two_datas():
     #print(torch.sum(mean_utter,1))
     visualize_clusters(metrics2, clusters2, similar_points, closestloc1, closestloc2, 3, 3, mean_utter)
 
-two_datas()
+#two_datas()
 
 def plot_losses(paths): #plots losses for each epoch from a file
     fig, ax = plt.subplots()
@@ -143,15 +143,52 @@ def plot_losses(paths): #plots losses for each epoch from a file
     ticks = np.arange(0,num_epochs+1,num_epochs/10)
     plt.legend(loc="upper left")
     ax.set_yscale('log')
+    #ax.set_yticks([10, 100, 200, 400])
+    #ax.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
     plt.grid()
     ax.set_xticks(ticks)
     plt.show()
 
 
-#plot_losses(['2222100'])
+#plot_losses(['3423100distances','3423100distancesnoutter'])
 
 def predict_cluster(pathc, pathg): #for a game location data file, computes the assigned cluster for each gamestep in the data
     metrics = get_game_metrics([pathg])
     _, cluster_centers = torch.load(pathc)
     prediction = kmeans_predict(metrics, cluster_centers)
     return pathg, prediction
+
+def generate_color_list(length, start_color, end_color):
+    start_rgb = tuple(int(start_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    end_rgb = tuple(int(end_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    step_size = [(end_rgb[i] - start_rgb[i]) / (length-1) for i in range(3)]
+    colors = []
+    for i in range(length):
+        color = tuple(round(start_rgb[j] + step_size[j] * i) for j in range(3))
+        colors.append('#{:02x}{:02x}{:02x}'.format(*color))
+    return colors
+
+def utter3(path):
+    utter = torch.load(path).detach()
+    flattened = torch.flatten(utter, start_dim=1, end_dim=2)
+    num_epochs = flattened.size()[0]
+    data_size = flattened.size()[1]
+    colors = generate_color_list(100, '#194526', '#d63131')
+    for i in range(num_epochs):
+        y = flattened[i]
+        x = torch.sum(y,0) / data_size
+        plt.scatter([i for _ in range(20)], [o for o in range(20)], s=x*200, c=colors[i % len(colors)])
+    plt.tick_params(
+    axis='x',          
+    which='both',      
+    bottom=False,      
+    top=False,         
+    labelbottom=False)
+    plt.yticks([x for x in range(20)])
+    plt.xlabel('training epoch')
+    plt.ylabel('vocabulary symbol usage')
+    plt.show()
+
+utter3('trainingdata/utter3423100.pt')
+
+
