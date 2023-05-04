@@ -6,6 +6,8 @@ import torch.nn as nn
 import matplotlib as mpl
 from matplotlib import cm
 import matplotlib.pyplot as plt
+import random
+import itertools
 
 from modules.game              import GameModule
 from torchmetrics.functional   import kl_divergence
@@ -27,6 +29,20 @@ def record_game_utter(num_agent, num_prey, model): #records game locations AND u
         locationdata[val] = timesteps[val]['locations']
         utterdata[val] = timesteps[val]['utterances']
     return locationdata, utterdata
+
+def generate_color_list(length, start_color, end_color):
+    start_rgb = tuple(int(start_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    end_rgb = tuple(int(end_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    step_size = [(end_rgb[i] - start_rgb[i]) / (length-1) for i in range(3)]
+    colors = []
+    for i in range(length):
+        color = tuple(round(start_rgb[j] + step_size[j] * i) for j in range(3))
+        colors.append('#{:02x}{:02x}{:02x}'.format(*color))
+    return colors
+
+def random_color():
+    colors = ['#FFC300', '#FF5733', '#C70039', '#900C3F', '#581845', '#00308F', '#0074D9', '#2ECC40', '#FFDC00', '#FF851B', '#FF4136', '#85144b', '#111111', '#AAAAAA', '#DDDDDD', '#001f3f', '#0074D9', '#7FDBFF', '#39CCCC', '#3D9970', '#2ECC40', '#01FF70', '#FF851B', '#FF4136', '#F012BE', '#B10DC9', '#85144b', '#111111', '#AAAAAA', '#DDDDDD']
+    return random.choice(colors)
 
 def get_game_metrics(locd, num_agent): #for each step in a game in a batch, computes the metrics #we define 2 metrics for a game:            #-mean of distance between agents                          #-mean of distance to the closest prey for each agent
     gamedata = torch.flatten(locd,end_dim=1)
@@ -89,11 +105,12 @@ def visualize_clusters(metrics, clusters, similar_points, loc1, loc2, num_agent1
     plt.tight_layout()
     plt.show()
 
+
+
 def pipeline(model, num_agent, num_prey, num_cluster):
     locd, utterd = record_game_utter(num_agent, num_prey, model)
     metrics = get_game_metrics(locd, num_agent)
     clusters = kcluster(metrics, num_cluster)
-    #visualize_clusters(metrics, clusters)
     return torch.flatten(locd,end_dim=1).detach(), torch.flatten(utterd, end_dim=1).detach(), metrics.detach(), clusters
 
 def two_datas():
@@ -114,36 +131,87 @@ def two_datas():
         #similar_utter.append([closestutt1, closestutt2])
     mean_utter = torch.zeros(7,20)
     counter = np.zeros(7)
+    print(utterd2.size())
     for val in cluster_ids_x:
         counter[val] += 1
     for i, ind in enumerate(cluster_ids_x):
-        mean_utter[ind] += torch.sum(torch.nan_to_num(utterd2[i],nan=0.0),0) 
+        mean_utter[ind] += utterd2[i][0]
     for i, val in enumerate(mean_utter):
         for k, newv in enumerate(val):
-            mean_utter[i][k] = newv / counter[i] / 3
-    #print(torch.sum(mean_utter,1))
+            mean_utter[i][k] = newv / counter[i]
     visualize_clusters(metrics2, clusters2, similar_points, closestloc1, closestloc2, 3, 3, mean_utter)
 
 #two_datas()
+
+def get_plot1_data(paths):
+    num_agent = 2
+    num_prey = 1
+    fig = plt.figure(figsize=(8,6))
+    v = cm.get_cmap('plasma',7)
+    for i, path in enumerate(paths):
+        locd, utterd, metrics, clusters = pipeline(torch.load(path), num_agent, num_prey,7)
+        cluster_ids_x_und, cluster_centers_und = clusters
+        cluster_ids_x = cluster_ids_x_und.detach()
+        cluster_centers = cluster_centers_und.detach()
+        x = metrics.detach()
+        ax1 = fig.add_subplot(len(paths),3,i*3+1)
+        ax2 = fig.add_subplot(len(paths),3,i*3+2)
+        ax3 = fig.add_subplot(len(paths),3,i*3+3)
+        ax1.scatter(x[:, 0], x[:, 1], c=cluster_ids_x,cmap=v)
+        ax1.scatter(
+            cluster_centers[:, 0], cluster_centers[:, 1],
+            c='white',
+            alpha=0.6,
+            edgecolors='black',
+            linewidths=2)
+        ax1.set_title(f'num_agent: {num_agent}, num_prey: {num_prey}')
+        ax1.set_xlabel("mean distance agent to prey")
+        ax1.set_ylabel("mean distance between agents")
+
+        utter = torch.zeros(7,20)
+        counter = np.zeros(7) 
+        for val in cluster_ids_x:
+            counter[val] += 1
+        for i, ind in enumerate(cluster_ids_x):
+            utter[ind] += utterd[i][0]
+        for i, val in enumerate(utter):
+            for k, newv in enumerate(val):
+                utter[i][k] = newv / counter[i]
+
+        start = 0
+        for i,val in enumerate(utter):
+            ax3.bar([x for x in range(start,start+20)], val, color=[v(i) for k in range(20)])
+            start += 20
+        ax3.set_xticks(np.arange(0,141,20))
+        num_agent += 1
+        num_prey +=  1
+    plt.tight_layout()
+    plt.show()
+
+get_plot1_data(['models/2311100.pt', 'models/2322100noload.pt','models/3423100noload.pt'])
 
 def plot_losses(paths): #plots losses for each epoch from a file
     fig, ax = plt.subplots()
     for path in paths:
         data = np.load(f'trainingdata/{path}.npy')
+        colors = generate_color_list(20, random_color(), random_color())
         min_agents = int(path[0])
         max_agents = int(path[1])
         min_preys = int(path[2])
         max_preys = int(path[3])
         num_epochs = int(path[4:7])
-
+        marker = itertools.cycle((',', '+', '.', 'o', '*')) 
+        counter = 0
         for a in range(min_agents, max_agents + 1):
             for l in range(min_preys, max_preys + 1):
-                plt.plot(np.arange(num_epochs), data[a-1][l-1], label=f"{path}: num_agents: {a} num_prey: {l}")
+                plt.plot(np.arange(num_epochs), data[a-1][l-1], label=f"{path}: num_agents: {a} num_prey: {l}", color=colors[counter], marker=next(marker))
+                counter += 1
 
     ticks = np.arange(0,num_epochs+1,num_epochs/10)
-    plt.legend(loc="upper left")
-    ax.set_yscale('log')
-    #ax.set_yticks([10, 100, 200, 400])
+    plt.legend(loc="upper right")
+    #ax.set_yscale('log')
+    ax.set_ylim(1,100)
+    ax.set_yticks([1,2,4,8,16,32])
     #ax.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
     plt.grid()
     ax.set_xticks(ticks)
@@ -151,6 +219,7 @@ def plot_losses(paths): #plots losses for each epoch from a file
 
 
 #plot_losses(['3423100distances','3423100distancesnoutter'])
+#plot_losses(['2322100distancesnoload'])
 
 def predict_cluster(pathc, pathg): #for a game location data file, computes the assigned cluster for each gamestep in the data
     metrics = get_game_metrics([pathg])
@@ -158,15 +227,7 @@ def predict_cluster(pathc, pathg): #for a game location data file, computes the 
     prediction = kmeans_predict(metrics, cluster_centers)
     return pathg, prediction
 
-def generate_color_list(length, start_color, end_color):
-    start_rgb = tuple(int(start_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-    end_rgb = tuple(int(end_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-    step_size = [(end_rgb[i] - start_rgb[i]) / (length-1) for i in range(3)]
-    colors = []
-    for i in range(length):
-        color = tuple(round(start_rgb[j] + step_size[j] * i) for j in range(3))
-        colors.append('#{:02x}{:02x}{:02x}'.format(*color))
-    return colors
+
 
 def utter3(path):
     utter = torch.load(path).detach()
@@ -189,6 +250,6 @@ def utter3(path):
     plt.ylabel('vocabulary symbol usage')
     plt.show()
 
-utter3('trainingdata/utter3423100.pt')
+#utter3('trainingdata/utter3423100.pt')
 
 
