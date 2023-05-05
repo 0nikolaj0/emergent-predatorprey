@@ -125,12 +125,11 @@ class GameModule(nn.Module):
         self.locations = self.locations + movements
         agent_baselines = self.locations[:, :self.num_agents]
         self.observations = self.locations.unsqueeze(1)- agent_baselines.unsqueeze(2)
-        for game in range(self.batch_size):
-                for agent in range(self.num_agents):
-                    for entity in range(self.num_entities):
-                        val = torch.sum(torch.abs(self.observations[game,agent,entity]))
-                        if val > configs.DEFAULT_VISIBILITY: #if entity is not within a predefined range from an agent
-                            self.observations[game,agent,entity] = torch.zeros(2) #zero its observation
+
+        mask = torch.sum(torch.abs(self.observations), dim=-1) > configs.DEFAULT_VISIBILITY
+        mask = mask.unsqueeze(-1).expand(self.observations.size())
+        self.observations = torch.masked_fill(self.observations, mask, 0) #sets observation to [0,0] if it isn't in the visibility range
+
         for b in range(self.batch_size): 
             self.goal_locations[b] = self.locations.data[b][self.goal_entities[b].squeeze()]
         self.goals = torch.cat((self.goal_locations, self.goal_agents), 2)

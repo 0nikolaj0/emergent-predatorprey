@@ -60,20 +60,21 @@ def kcluster(file, num_clusters): #clusters game metrics
     )
     return result
 
-def visualize_clusters(metrics, clusters, similar_points, loc1, loc2, num_agent1, num_agent2, utter): #visualizes clustered game metrics
-    cluster_ids_x_und, cluster_centers_und = clusters
+def visualize_clusters(metrics1, clusters1, metrics2, clusters2, similar_points, utter, utter2): #visualizes clustered game metrics
+    cluster_ids_x_und, cluster_centers_und1 = clusters1
     cluster_ids_x = cluster_ids_x_und.detach()
-    cluster_centers = cluster_centers_und.detach()
+    cluster_centers1 = cluster_centers_und1.detach()
     v = cm.get_cmap('plasma',7)
-    x = metrics.detach()
+    x = metrics1.detach()
     fig = plt.figure(figsize=(8,6))
-    ax1 = fig.add_subplot(131)
-    ax2 = fig.add_subplot(232)
-    ax3 = fig.add_subplot(235)
-    ax4 = fig.add_subplot(233)
+    ax1 = fig.add_subplot(231)
+    ax2 = fig.add_subplot(234)
+    ax4 = fig.add_subplot(232)
+    ax5 = fig.add_subplot(235)
+    ax6 = fig.add_subplot(133)
     ax1.scatter(x[:, 0], x[:, 1], c=cluster_ids_x,cmap=v)
     ax1.scatter(
-        cluster_centers[:, 0], cluster_centers[:, 1],
+        cluster_centers1[:, 0], cluster_centers1[:, 1],
         c='white',
         alpha=0.6,
         edgecolors='black',
@@ -86,19 +87,47 @@ def visualize_clusters(metrics, clusters, similar_points, loc1, loc2, num_agent1
         edgecolors='black',
         linewidths=2
     )
-    ax2.scatter(loc1[:num_agent1,0], loc1[:num_agent1,1], c="red")
-    ax2.scatter(loc1[num_agent1:,0], loc1[num_agent1:,1], c="blue")
-    ax2.set_xlim([-3.5,20])
-    ax2.set_ylim([-3.5,20])
-    ax3.scatter(loc2[:num_agent2,0], loc2[:num_agent2,1], c="red")
-    ax3.scatter(loc2[num_agent2:,0], loc2[num_agent2:,1], c="blue")
-    ax3.set_xlim([-3.5,20])
-    ax3.set_ylim([-3.5,20])
+
+    cluster_ids_x_und, cluster_centers_und2 = clusters2
+    cluster_ids_x = cluster_ids_x_und.detach()
+    cluster_centers2 = cluster_centers_und2.detach()
+    v = cm.get_cmap('plasma',7)
+    x = metrics2.detach()
+    ax2.scatter(x[:, 0], x[:, 1], c=cluster_ids_x,cmap=v)
+    ax2.scatter(
+        cluster_centers2[:, 0], cluster_centers2[:, 1],
+        c='white',
+        alpha=0.6,
+        edgecolors='black',
+        linewidths=2
+    )
+    ax2.scatter(
+        similar_points[:, 0], similar_points[:, 1],
+        c='green',
+        alpha=0.6,
+        edgecolors='black',
+        linewidths=2
+    )
+    map = torch.argmin(torch.cdist(cluster_centers1, cluster_centers2,1),0)
+    kl_div = torch.Tensor(7)
+    for i, val in enumerate(map):
+        p = torch.unsqueeze(utter2[i], 0)
+        q = torch.unsqueeze(utter2[val], 0)
+        res = kl_divergence(p, q)
+        kl_div[i] = res
+
+    ax6.bar([x for x in range(len(kl_div))], kl_div)
+
     start = 0
     for i,val in enumerate(utter):
         ax4.bar([x for x in range(start,start+20)], val, color=[v(i) for k in range(20)])
         start += 20
     ax4.set_xticks(np.arange(0,141,20))
+    start = 0
+    for i,val in enumerate(utter2):
+        ax5.bar([x for x in range(start,start+20)], val, color=[v(i) for k in range(20)])
+        start += 20
+    ax5.set_xticks(np.arange(0,141,20))
     ax1.axis([torch.min(x[:,0])-1, torch.max(x[:,0])+1, torch.min(x[:,1])-1, torch.max(x[:,1])+1])
     ax1.set_xlabel("mean distance agent to prey")
     ax1.set_ylabel("mean distance between agents")
@@ -114,13 +143,16 @@ def pipeline(model, num_agent, num_prey, num_cluster):
     return torch.flatten(locd,end_dim=1).detach(), torch.flatten(utterd, end_dim=1).detach(), metrics.detach(), clusters
 
 def two_datas():
-    locd1, utterd1, metrics1, clusters1 = pipeline(torch.load('models/2324300.pt'),3,2,7)
-    locd2, utterd2, metrics2, clusters2 = pipeline(torch.load('models/2324300.pt'),3,2,7)
-    cluster_ids_x_und, cluster_centers_und = clusters2
+    locd1, utterd1, metrics1, clusters1 = pipeline(torch.load('models/3423100from.pt'),3,4,7)
+    locd2, utterd2, metrics2, clusters2 = pipeline(torch.load('models/3423100.pt'),3,4,7)
+    cluster_ids_x_und, cluster_centers_und = clusters1
     cluster_ids_x = cluster_ids_x_und.detach()
     cluster_centers = cluster_centers_und.detach()
     similar_points = np.zeros((len(cluster_centers)*2,2))
-    similar_utter =  []
+    cluster_ids_x_und2, cluster_centers_und2 = clusters2
+    cluster_ids_x2 = cluster_ids_x_und2.detach()
+    cluster_centers2 = cluster_centers_und2.detach()
+
     for i, val in enumerate(cluster_centers):
         closest_ind1 = torch.argmin(torch.cdist(metrics1,torch.unsqueeze(val,0),1))
         closestm1, closestloc1, closestutt1 = metrics1[closest_ind1], locd1[closest_ind1], utterd1[closest_ind1]
@@ -131,19 +163,27 @@ def two_datas():
         #similar_utter.append([closestutt1, closestutt2])
     mean_utter = torch.zeros(7,20)
     counter = np.zeros(7)
-    print(utterd2.size())
     for val in cluster_ids_x:
         counter[val] += 1
     for i, ind in enumerate(cluster_ids_x):
-        mean_utter[ind] += utterd2[i][0]
+        mean_utter[ind] += utterd1[i][0]
     for i, val in enumerate(mean_utter):
         for k, newv in enumerate(val):
             mean_utter[i][k] = newv / counter[i]
-    visualize_clusters(metrics2, clusters2, similar_points, closestloc1, closestloc2, 3, 3, mean_utter)
+    mean_utter2 = torch.zeros(7,20)
+    counter2 = np.zeros(7)
+    for val in cluster_ids_x2:
+        counter2[val] += 1
+    for i, ind in enumerate(cluster_ids_x2):
+        mean_utter2[ind] += torch.sum(utterd2[i],0)
+    for i, val in enumerate(mean_utter2):
+        for k, newv in enumerate(val):
+            mean_utter2[i][k] = newv / counter2[i] / 3
+    visualize_clusters(metrics1, clusters1, metrics2, clusters2, similar_points, mean_utter, mean_utter2)
 
-#two_datas()
+two_datas()
 
-def get_plot1_data(paths):
+def get_plot1(paths):
     num_agent = 2
     num_prey = 1
     fig = plt.figure(figsize=(8,6))
@@ -168,6 +208,12 @@ def get_plot1_data(paths):
         ax1.set_xlabel("mean distance agent to prey")
         ax1.set_ylabel("mean distance between agents")
 
+        ax2.set_title(f'model: {path}')
+        ax2.scatter(locd[0,:num_agent,0], locd[0,:num_agent,1], c="red")
+        ax2.scatter(locd[0,num_agent:,0], locd[0,num_agent:,1], c="blue")
+        ax2.set_xlim([-3.5,20])
+        ax2.set_ylim([-3.5,20])
+
         utter = torch.zeros(7,20)
         counter = np.zeros(7) 
         for val in cluster_ids_x:
@@ -180,15 +226,15 @@ def get_plot1_data(paths):
 
         start = 0
         for i,val in enumerate(utter):
-            ax3.bar([x for x in range(start,start+20)], val, color=[v(i) for k in range(20)])
+            ax3.bar([x for x in range(start,start+20)], val, color=[v(i) for _ in range(20)])
             start += 20
         ax3.set_xticks(np.arange(0,141,20))
         num_agent += 1
-        num_prey +=  1
+        num_prey  += 1
     plt.tight_layout()
     plt.show()
 
-get_plot1_data(['models/2311100.pt', 'models/2322100noload.pt','models/3423100noload.pt'])
+#get_plot1(['models/2311100.pt', 'models/2322100noload.pt','models/3423100noload.pt'])
 
 def plot_losses(paths): #plots losses for each epoch from a file
     fig, ax = plt.subplots()
@@ -227,8 +273,6 @@ def predict_cluster(pathc, pathg): #for a game location data file, computes the 
     prediction = kmeans_predict(metrics, cluster_centers)
     return pathg, prediction
 
-
-
 def utter3(path):
     utter = torch.load(path).detach()
     flattened = torch.flatten(utter, start_dim=1, end_dim=2)
@@ -240,11 +284,11 @@ def utter3(path):
         x = torch.sum(y,0) / data_size
         plt.scatter([i for _ in range(20)], [o for o in range(20)], s=x*200, c=colors[i % len(colors)])
     plt.tick_params(
-    axis='x',          
-    which='both',      
-    bottom=False,      
-    top=False,         
-    labelbottom=False)
+        axis='x',          
+        which='both',      
+        bottom=False,      
+        top=False,         
+        labelbottom=False)
     plt.yticks([x for x in range(20)])
     plt.xlabel('training epoch')
     plt.ylabel('vocabulary symbol usage')
