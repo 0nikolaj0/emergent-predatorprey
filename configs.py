@@ -128,6 +128,21 @@ default_game_config = GameConfig(
         False
         )
 
+plot4_game_config = GameConfig(
+        1,
+        DEFAULT_WORLD_DIM,
+        MAX_AGENTS,
+        MAX_PREY,
+        MIN_AGENTS,
+        MIN_PREY,
+        NUM_SHAPES,
+        NUM_COLORS,
+        USE_UTTERANCES,
+        DEFAULT_VOCAB_SIZE,
+        DEFAULT_HIDDEN_SIZE,
+        False
+        )
+
 if USE_UTTERANCES:
     feat_size = DEFAULT_FEAT_VEC_SIZE*3
 else:

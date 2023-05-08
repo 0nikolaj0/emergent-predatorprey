@@ -12,6 +12,7 @@ import itertools
 from modules.game              import GameModule
 from torchmetrics.functional   import kl_divergence
 from kmeans_pytorch            import kmeans, kmeans_predict
+from configs                   import plot4_game_config
 
 def record_game_utter(num_agent, num_prey, model): #records game locations AND utterances for a single forward call
     agent = model
@@ -181,7 +182,7 @@ def two_datas():
             mean_utter2[i][k] = newv / counter2[i] / 3
     visualize_clusters(metrics1, clusters1, metrics2, clusters2, similar_points, mean_utter, mean_utter2)
 
-two_datas()
+#two_datas()
 
 def get_plot1(paths):
     num_agent = 2
@@ -234,7 +235,7 @@ def get_plot1(paths):
     plt.tight_layout()
     plt.show()
 
-#get_plot1(['models/2311100.pt', 'models/2322100noload.pt','models/3423100noload.pt'])
+#get_plot1(['models/2311100.pt', 'models/2322100noload.pt','models/3423100.pt'])
 
 def plot_losses(paths): #plots losses for each epoch from a file
     fig, ax = plt.subplots()
@@ -264,7 +265,7 @@ def plot_losses(paths): #plots losses for each epoch from a file
     plt.show()
 
 
-#plot_losses(['3423100distances','3423100distancesnoutter'])
+#plot_losses(['3423100distancesnoutter', '3423100distancesfrom'])
 #plot_losses(['2322100distancesnoload'])
 
 def predict_cluster(pathc, pathg): #for a game location data file, computes the assigned cluster for each gamestep in the data
@@ -294,6 +295,44 @@ def utter3(path):
     plt.ylabel('vocabulary symbol usage')
     plt.show()
 
-#utter3('trainingdata/utter3423100.pt')
+#utter3('trainingdata/utter2322100noload.pt')
+
+def plot4(agent):
+    fig, axs = plt.subplots(4,8)
+    agent.reset()
+    game = GameModule(plot4_game_config, 2, 2)
+    game.locations = torch.FloatTensor([[[2,8],[8,2],[8,14],[14,8]]])
+    game.goal_agents = torch.FloatTensor([[[1],[0]]])
+    game.goal_entities = torch.IntTensor([[[3],[2]]])
+    colors2 = generate_color_list(20, '#038f49', '#f20a8d')
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+    _, history = agent(game)
+    for index in range(len(history)):
+        loc = history[index]['locations'][0].detach()
+        utt = history[index]['utterances'][0][0].detach()
+        ax = axs.flat[index]
+        ax2 = axs.flat[index+16]
+        ax.set_title(index)
+        ax2.set_title(index)
+        ax.set_xlim([-3.5,20])
+        ax.set_ylim([-3.5,20])
+        for i in range(game.num_agents):
+            ax.scatter(loc[i][0], loc[i][1], s=70, c=colors[i], marker=f"$a{i}$")
+        for k in range(game.num_agents, game.num_prey+game.num_agents):
+            ax.scatter(loc[k][0], loc[k][1], s=70, c=colors[k], marker=f"$p{k}$")
+        ax2.bar([x for x in range(20)], utt, color=colors2)
+        ax2.set_ylim([0,1])
+        ax2.xaxis.set_ticklabels([])
+        ax.xaxis.set_ticks([])
+        ax.yaxis.set_ticks([])
+        ax2.yaxis.set_ticks([])
+        ax2.set_xticks([x for x in range(20)])
+
+    plt.show()
+
+plot4(torch.load('models/3423100from.pt'))
+
+
+
 
 
