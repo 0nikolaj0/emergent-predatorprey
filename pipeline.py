@@ -295,15 +295,15 @@ def utter3(path):
     plt.ylabel('vocabulary symbol usage')
     plt.show()
 
-#utter3('trainingdata/utter2322100noload.pt')
+#utter3('trainingdata/utter3423100from.pt')
 
 def plot4(agent):
     fig, axs = plt.subplots(4,8)
     agent.reset()
-    game = GameModule(plot4_game_config, 2, 2)
-    game.locations = torch.FloatTensor([[[2,8],[8,2],[8,14],[14,8]]])
+    game = GameModule(plot4_game_config, 2, 3)
+    game.locations = torch.FloatTensor([[[2,8],[8,2],[8,14],[14,8],[8,8]]])
     game.goal_agents = torch.FloatTensor([[[1],[0]]])
-    game.goal_entities = torch.IntTensor([[[3],[2]]])
+    game.goal_entities = torch.IntTensor([[[4],[2]]])
     colors2 = generate_color_list(20, '#038f49', '#f20a8d')
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
     _, history = agent(game)
@@ -330,7 +330,7 @@ def plot4(agent):
 
     plt.show()
 
-plot4(torch.load('models/3423100from.pt'))
+plot4(torch.load('models/2311100.pt'))
 
 
 
