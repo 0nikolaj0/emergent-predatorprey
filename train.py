@@ -52,7 +52,7 @@ def main():
     print(training_config)
     print(game_config)
     print(agent_config)
-    agent = torch.load('models/2322100from.pt')
+    agent = AgentModule(agent_config)
     if training_config.use_cuda:
         agent.cuda()
     optimizer = RMSprop(agent.parameters(), lr=training_config.learning_rate)

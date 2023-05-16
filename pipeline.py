@@ -4,15 +4,17 @@ import configs
 import numpy as np
 import torch.nn as nn
 import matplotlib as mpl
-from matplotlib import cm
 import matplotlib.pyplot as plt
 import random
 import itertools
 
+from matplotlib                import cm
 from modules.game              import GameModule
 from torchmetrics.functional   import kl_divergence
+from scipy.interpolate         import make_interp_spline
 from kmeans_pytorch            import kmeans, kmeans_predict
-from configs                   import plot4_game_config
+from configs                   import plot4_game_config, default_game_config
+
 
 def record_game_utter(num_agent, num_prey, model): #records game locations AND utterances for a single forward call
     agent = model
@@ -112,7 +114,7 @@ def visualize_clusters(metrics1, clusters1, metrics2, clusters2, similar_points,
     map = torch.argmin(torch.cdist(cluster_centers1, cluster_centers2,1),0)
     kl_div = torch.Tensor(7)
     for i, val in enumerate(map):
-        p = torch.unsqueeze(utter2[i], 0)
+        p = torch.unsqueeze(utter[i], 0)
         q = torch.unsqueeze(utter2[val], 0)
         res = kl_divergence(p, q)
         kl_div[i] = res
@@ -251,7 +253,11 @@ def plot_losses(paths): #plots losses for each epoch from a file
         counter = 0
         for a in range(min_agents, max_agents + 1):
             for l in range(min_preys, max_preys + 1):
-                plt.plot(np.arange(num_epochs), data[a-1][l-1], label=f"{path}: num_agents: {a} num_prey: {l}", color=colors[counter], marker=next(marker))
+                x = np.arange(num_epochs)
+                X_Y_Spline = make_interp_spline(x, data[a-1][l-1])
+                X_ = np.linspace(x.min(), x.max(), 500)
+                Y_ = X_Y_Spline(X_)
+                plt.plot(X_, Y_, label=f"{path}: num_agents: {a} num_prey: {l}", color=colors[counter], marker=next(marker))
                 counter += 1
 
     ticks = np.arange(0,num_epochs+1,num_epochs/10)
@@ -267,6 +273,9 @@ def plot_losses(paths): #plots losses for each epoch from a file
 
 #plot_losses(['3423100distancesnoutter', '3423100distancesfrom'])
 #plot_losses(['2322100distancesnoload'])
+#plot_losses(['2311100distancesnoload', '2311100distancesnoutter'])
+#plot_losses(['2322100distancesnoload', '2322100distancesnoutter', '2322100distancesfrom'])
+plot_losses(['3355100distances','3355100distancesnoutter'])
 
 def predict_cluster(pathc, pathg): #for a game location data file, computes the assigned cluster for each gamestep in the data
     metrics = get_game_metrics([pathg])
@@ -297,19 +306,23 @@ def utter3(path):
 
 #utter3('trainingdata/utter3423100from.pt')
 
-def plot4(agent):
+def plot4(agent, game):
     fig, axs = plt.subplots(4,8)
     agent.reset()
-    game = GameModule(plot4_game_config, 2, 3)
-    game.locations = torch.FloatTensor([[[2,8],[8,2],[8,14],[14,8],[8,8]]])
-    game.goal_agents = torch.FloatTensor([[[1],[0]]])
-    game.goal_entities = torch.IntTensor([[[4],[2]]])
+    agent.train(True)
+    game.using_utterances = agent.using_utterances
+    # game.locations = torch.FloatTensor([[[2,8],[8,2],[8,14],[14,8],[8,8],[10,10],[12,2]]])
+    # game.goal_agents = torch.FloatTensor([[[1],[0]]])
+    # game.goal_entities = torch.IntTensor([[[6],[6]]])
+    # print(game.goal_agents)
+    # print(game.goal_entities)
     colors2 = generate_color_list(20, '#038f49', '#f20a8d')
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
-    _, history = agent(game)
+    result, history = agent(game)
     for index in range(len(history)):
         loc = history[index]['locations'][0].detach()
-        utt = history[index]['utterances'][0][0].detach()
+        if agent.using_utterances:
+            utt = history[index]['utterances'][0][0].detach()
         ax = axs.flat[index]
         ax2 = axs.flat[index+16]
         ax.set_title(index)
@@ -317,20 +330,25 @@ def plot4(agent):
         ax.set_xlim([-3.5,20])
         ax.set_ylim([-3.5,20])
         for i in range(game.num_agents):
-            ax.scatter(loc[i][0], loc[i][1], s=70, c=colors[i], marker=f"$a{i}$")
+            ax.scatter(loc[i][0], loc[i][1], s=70, c=colors[i], marker=f"$A{i}$")
         for k in range(game.num_agents, game.num_prey+game.num_agents):
             ax.scatter(loc[k][0], loc[k][1], s=70, c=colors[k], marker=f"$p{k}$")
-        ax2.bar([x for x in range(20)], utt, color=colors2)
+        if agent.using_utterances:
+            ax2.bar([x for x in range(20)], utt, color=colors2)
         ax2.set_ylim([0,1])
         ax2.xaxis.set_ticklabels([])
         ax.xaxis.set_ticks([])
         ax.yaxis.set_ticks([])
         ax2.yaxis.set_ticks([])
         ax2.set_xticks([x for x in range(20)])
+    dist = game.get_avg_agent_to_goal_distance()
+    print(dist)
+    #plt.show()
 
-    plt.show()
-
-plot4(torch.load('models/2311100.pt'))
+# game = GameModule(plot4_game_config, 2, 5)
+# plot4(torch.load('models/2311100noutternoload.pt'), game)
+# plot4(torch.load('models/3423100from.pt'), game)
+# plot4(torch.load('models/3355100.pt'), game)
 
 
 

@@ -114,7 +114,6 @@ class AgentModule(nn.Module):
             # for i, step in enumerate(indices):
             #     for k, agent in enumerate(step):
             #         newv = -torch.sigmoid(game.locations[i,agent,:] - game.locations[i,k+game.num_agents,:])
-            #         movements[i,k+game.num_agents,:] = newv
 
             for agent in range(game.num_agents):
                 physical_feat = self.get_physical_feat(game, agent)
