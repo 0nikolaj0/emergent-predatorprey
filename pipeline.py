@@ -198,8 +198,8 @@ def get_plot1(paths):
         cluster_centers = cluster_centers_und.detach()
         x = metrics.detach()
         ax1 = fig.add_subplot(len(paths),3,i*3+1)
-        ax2 = fig.add_subplot(len(paths),3,i*3+2)
-        ax3 = fig.add_subplot(len(paths),3,i*3+3)
+
+        ax3 = fig.add_subplot(len(paths),3,i*3+2)
         ax1.scatter(x[:, 0], x[:, 1], c=cluster_ids_x,cmap=v)
         ax1.scatter(
             cluster_centers[:, 0], cluster_centers[:, 1],
@@ -210,12 +210,6 @@ def get_plot1(paths):
         ax1.set_title(f'num_agent: {num_agent}, num_prey: {num_prey}')
         ax1.set_xlabel("mean distance agent to prey")
         ax1.set_ylabel("mean distance between agents")
-
-        ax2.set_title(f'model: {path}')
-        ax2.scatter(locd[0,:num_agent,0], locd[0,:num_agent,1], c="red")
-        ax2.scatter(locd[0,num_agent:,0], locd[0,num_agent:,1], c="blue")
-        ax2.set_xlim([-3.5,20])
-        ax2.set_ylim([-3.5,20])
 
         utter = torch.zeros(7,20)
         counter = np.zeros(7) 
@@ -237,7 +231,7 @@ def get_plot1(paths):
     plt.tight_layout()
     plt.show()
 
-#get_plot1(['models/2311100.pt', 'models/2322100noload.pt','models/3423100.pt'])
+#get_plot1(['models/2311100noload.pt', 'models/2322100from.pt','models/3423100from.pt'])
 
 def plot_losses(paths): #plots losses for each epoch from a file
     fig, ax = plt.subplots()
@@ -264,7 +258,7 @@ def plot_losses(paths): #plots losses for each epoch from a file
     plt.legend(loc="upper right")
     #ax.set_yscale('log')
     ax.set_ylim(1,100)
-    ax.set_yticks([1,2,4,8,16,32])
+    #ax.set_yticks([1,2,4,8,16,32])
     #ax.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
     plt.grid()
     ax.set_xticks(ticks)
@@ -275,7 +269,7 @@ def plot_losses(paths): #plots losses for each epoch from a file
 #plot_losses(['2322100distancesnoload'])
 #plot_losses(['2311100distancesnoload', '2311100distancesnoutter'])
 #plot_losses(['2322100distancesnoload', '2322100distancesnoutter', '2322100distancesfrom'])
-plot_losses(['3355100distances','3355100distancesnoutter'])
+#plot_losses(['3355100distances','3355100distancesnoutter'])
 
 def predict_cluster(pathc, pathg): #for a game location data file, computes the assigned cluster for each gamestep in the data
     metrics = get_game_metrics([pathg])
@@ -311,9 +305,10 @@ def plot4(agent, game):
     agent.reset()
     agent.train(True)
     game.using_utterances = agent.using_utterances
-    # game.locations = torch.FloatTensor([[[2,8],[8,2],[8,14],[14,8],[8,8],[10,10],[12,2]]])
+    # game.locations = torch.FloatTensor([[[2,8],[8,2],[8,14],[14,8],[8,8]]])
     # game.goal_agents = torch.FloatTensor([[[1],[0]]])
-    # game.goal_entities = torch.IntTensor([[[6],[6]]])
+    # game.goal_entities = torch.IntTensor([[[2],[3]]])
+
     # print(game.goal_agents)
     # print(game.goal_entities)
     colors2 = generate_color_list(20, '#038f49', '#f20a8d')
@@ -342,13 +337,14 @@ def plot4(agent, game):
         ax2.yaxis.set_ticks([])
         ax2.set_xticks([x for x in range(20)])
     dist = game.get_avg_agent_to_goal_distance()
-    print(dist)
-    #plt.show()
+    #print(dist)
+    plt.show()
 
-# game = GameModule(plot4_game_config, 2, 5)
-# plot4(torch.load('models/2311100noutternoload.pt'), game)
-# plot4(torch.load('models/3423100from.pt'), game)
-# plot4(torch.load('models/3355100.pt'), game)
+game = GameModule(default_game_config, 2, 3)
+#plot4(torch.load('models/2311100noutternoload.pt'), game)
+plot4(torch.load('models/3423100from.pt'), game)
+#plot4(torch.load('models/3423100noutter.pt'), game)
+#plot4(torch.load('models/3355100.pt'), game)
 
 
 

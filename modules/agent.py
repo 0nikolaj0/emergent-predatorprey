@@ -106,8 +106,16 @@ class AgentModule(nn.Module):
 
             for prey in range(game.num_agents,game.num_entities):
                 ind = torch.randint(4,size=(1,)).item()
-                movements[:,prey,:] = possible_movements[ind]
+                movements[:,prey,:] = possible_movements[ind] 
 
+            for b in range(game.batch_size):
+                for i in range(game.num_prey):
+                    if True in game.caught_mask[b,i,:]:
+                        movements[b,i+game.num_agents,:] = self.Tensor([0,0])
+        
+            # print(game.locations[0])
+            # print(game.caught_mask[0])
+            # print(movements[0,game.num_agents:,:])
             # agentloc = game.locations[:,:game.num_agents,:].clone() #prey move away from nearest predator
             # predloc = game.locations[:,game.num_agents:,:].clone()
             # _, indices = torch.min(torch.cdist(agentloc,predloc,1),1)

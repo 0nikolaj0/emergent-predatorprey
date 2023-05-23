@@ -46,7 +46,7 @@ class GameModule(nn.Module):
         colors = (torch.rand(self.batch_size, self.num_entities, 1) * config.num_colors).floor()
         shapes = (torch.rand(self.batch_size, self.num_entities, 1) * config.num_shapes).floor()
 
-        goal_agents = self.Tensor(self.batch_size, self.num_agents, 1)
+        goal_agents = torch.IntTensor(self.batch_size, self.num_agents, 1)
         goal_entities = (torch.rand(self.batch_size, self.num_agents, 1) * self.num_prey).floor().long() + self.num_agents
         goal_locations = self.Tensor(self.batch_size, self.num_agents, 2)
 
@@ -110,6 +110,7 @@ class GameModule(nn.Module):
 
         # [batch_size, num_agents, 2] [batch_size, num_agents, 1]
         self.observed_goals = torch.cat((new_obs, goal_agents), dim=2)
+        self.caught_mask = torch.BoolTensor(self.batch_size, self.num_prey, self.num_agents)
 
 
 
@@ -129,6 +130,11 @@ class GameModule(nn.Module):
         mask = torch.sum(torch.abs(self.observations), dim=-1) > configs.DEFAULT_VISIBILITY
         mask = mask.unsqueeze(-1).expand(self.observations.size())
         self.observations = torch.masked_fill(self.observations, mask, 0) #sets observation to [0,0] if it isn't in the visibility range
+
+        prey = self.locations[:,self.num_agents:,:]
+        pred = self.locations[:,:self.num_agents,:]
+        dist_matrix = torch.cdist(prey, pred, 1)
+        self.caught_mask = dist_matrix < 2
 
         for b in range(self.batch_size): 
             self.goal_locations[b] = self.locations.data[b][self.goal_entities[b].squeeze()]

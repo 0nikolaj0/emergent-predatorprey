@@ -10,7 +10,7 @@ DEFAULT_BATCH_SIZE = 512
 DEFAULT_NUM_EPOCHS = 100
 DEFAULT_LR = 5e-4
 SAVE_MODEL = True
-DEFAULT_MODEL_FILE = 'models/' + NOW.strftime("%d-%m-%Y %H%M") + '.pt'
+DEFAULT_MODEL_FILE = 'modelsn/' + NOW.strftime("%d-%m-%Y %H%M") + '.pt'
 
 DEFAULT_HIDDEN_SIZE = 256
 DEFAULT_DROPOUT = 0.1
@@ -25,9 +25,9 @@ DEFAULT_VISIBILITY = 16
 
 DEFAULT_WORLD_DIM = 16
 MAX_AGENTS = 3
-MAX_PREY = 1
-MIN_AGENTS = 2
-MIN_PREY = 1
+MAX_PREY = 2
+MIN_AGENTS = 3
+MIN_PREY = 2
 NUM_COLORS = 3
 NUM_SHAPES = 2
 
@@ -132,8 +132,8 @@ default_game_config = GameConfig(
         )
 
 plot4_game_config = GameConfig(
-        512,
-        32,
+        1,
+        DEFAULT_WORLD_DIM,
         MAX_AGENTS,
         MAX_PREY,
         MIN_AGENTS,
