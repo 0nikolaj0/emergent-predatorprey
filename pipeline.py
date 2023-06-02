@@ -146,8 +146,8 @@ def pipeline(model, num_agent, num_prey, num_cluster):
     return torch.flatten(locd,end_dim=1).detach(), torch.flatten(utterd, end_dim=1).detach(), metrics.detach(), clusters
 
 def two_datas():
-    locd1, utterd1, metrics1, clusters1 = pipeline(torch.load('models/3423100from.pt'),3,4,7)
-    locd2, utterd2, metrics2, clusters2 = pipeline(torch.load('models/3423100.pt'),3,4,7)
+    locd1, utterd1, metrics1, clusters1 = pipeline(torch.load('modelsn/3423100from.pt'),3,4,7)
+    locd2, utterd2, metrics2, clusters2 = pipeline(torch.load('modelsn/3423100noload.pt'),3,4,7)
     cluster_ids_x_und, cluster_centers_und = clusters1
     cluster_ids_x = cluster_ids_x_und.detach()
     cluster_centers = cluster_centers_und.detach()
@@ -184,7 +184,7 @@ def two_datas():
             mean_utter2[i][k] = newv / counter2[i] / 3
     visualize_clusters(metrics1, clusters1, metrics2, clusters2, similar_points, mean_utter, mean_utter2)
 
-#two_datas()
+two_datas()
 
 def get_plot1(paths):
     num_agent = 2
@@ -236,7 +236,7 @@ def get_plot1(paths):
 def plot_losses(paths): #plots losses for each epoch from a file
     fig, ax = plt.subplots()
     for path in paths:
-        data = np.load(f'trainingdata/{path}.npy')
+        data = np.load(f'trainingdatan/{path}.npy')
         colors = generate_color_list(20, random_color(), random_color())
         min_agents = int(path[0])
         max_agents = int(path[1])
@@ -257,7 +257,7 @@ def plot_losses(paths): #plots losses for each epoch from a file
     ticks = np.arange(0,num_epochs+1,num_epochs/10)
     plt.legend(loc="upper right")
     #ax.set_yscale('log')
-    ax.set_ylim(1,100)
+    #ax.set_ylim(1,100)
     #ax.set_yticks([1,2,4,8,16,32])
     #ax.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
     plt.grid()
@@ -265,17 +265,36 @@ def plot_losses(paths): #plots losses for each epoch from a file
     plt.show()
 
 
-#plot_losses(['3423100distancesnoutter', '3423100distancesfrom'])
+#plot_losses(['3423100noload'])
 #plot_losses(['2322100distancesnoload'])
 #plot_losses(['2311100distancesnoload', '2311100distancesnoutter'])
 #plot_losses(['2322100distancesnoload', '2322100distancesnoutter', '2322100distancesfrom'])
 #plot_losses(['3355100distances','3355100distancesnoutter'])
+#plot_losses(['2322100from'])
+#plot_losses(['334550distances','334550distancesbaseline'])
+#plot_losses(['338850distancesnoload', '338850distancesbaseline','338850distances'])
+#plot_losses(['338850noload', '338850baseline','338850'])
+#plot_losses(['3423100distancesfrom','3423100distancesbaseline'])
 
 def predict_cluster(pathc, pathg): #for a game location data file, computes the assigned cluster for each gamestep in the data
     metrics = get_game_metrics([pathg])
     _, cluster_centers = torch.load(pathc)
     prediction = kmeans_predict(metrics, cluster_centers)
     return pathg, prediction
+
+def compare_minimum(distances):
+    for path in distances:
+        data = np.load(f'trainingdatan/{path}.npy')
+        min_agents = int(path[0])
+        max_agents = int(path[1])
+        min_preys = int(path[2])
+        max_preys = int(path[3])
+        print(f"----{path}----")
+        for a in range(min_agents, max_agents + 1):
+            for l in range(min_preys, max_preys + 1):
+                print(f"agents: {a}, prey: {l}, min achieved: {min([i if i != 0 else 100000 for i in data[a-1][l-1]])}")
+
+#compare_minimum(['3423100distancesnoload', '3423100distancesfrom','3423100distancesbaseline'])
 
 def utter3(path):
     utter = torch.load(path).detach()
@@ -294,36 +313,38 @@ def utter3(path):
         top=False,         
         labelbottom=False)
     plt.yticks([x for x in range(20)])
-    plt.xlabel('training epoch')
+    plt.xlabel('learning run')
     plt.ylabel('vocabulary symbol usage')
     plt.show()
 
-#utter3('trainingdata/utter3423100from.pt')
+#utter3('trainingdatan/utter2322100from.pt')
+#utter3('trainingdatan/utter3423100noload.pt')
+#utter3('trainingdata/utter2322100noload.pt')
 
 def plot4(agent, game):
     fig, axs = plt.subplots(4,8)
     agent.reset()
     agent.train(True)
     game.using_utterances = agent.using_utterances
-    # game.locations = torch.FloatTensor([[[2,8],[8,2],[8,14],[14,8],[8,8]]])
-    # game.goal_agents = torch.FloatTensor([[[1],[0]]])
-    # game.goal_entities = torch.IntTensor([[[2],[3]]])
+    game.locations = torch.FloatTensor([[[2,8],[8,2],[8,14],[14,8],[8,8],[6,6]]])
+    game.goal_agents = torch.FloatTensor([[[2],[0],[1]]])
+    game.goal_entities = torch.IntTensor([[[3],[4],[5]]])
 
-    # print(game.goal_agents)
-    # print(game.goal_entities)
+    #print(game.goal_agents)
+    #print(game.goal_entities)
     colors2 = generate_color_list(20, '#038f49', '#f20a8d')
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
     result, history = agent(game)
     for index in range(len(history)):
         loc = history[index]['locations'][0].detach()
         if agent.using_utterances:
-            utt = history[index]['utterances'][0][0].detach()
+            utt = history[index]['utterances'][0][1].detach()
         ax = axs.flat[index]
         ax2 = axs.flat[index+16]
         ax.set_title(index)
         ax2.set_title(index)
-        ax.set_xlim([-3.5,20])
-        ax.set_ylim([-3.5,20])
+        ax.set_xlim([-3.5,50])
+        ax.set_ylim([-3.5,50])
         for i in range(game.num_agents):
             ax.scatter(loc[i][0], loc[i][1], s=70, c=colors[i], marker=f"$A{i}$")
         for k in range(game.num_agents, game.num_prey+game.num_agents):
@@ -340,9 +361,9 @@ def plot4(agent, game):
     #print(dist)
     plt.show()
 
-game = GameModule(default_game_config, 2, 3)
-#plot4(torch.load('models/2311100noutternoload.pt'), game)
-plot4(torch.load('models/3423100from.pt'), game)
+#game = GameModule(plot4_game_config, 3, 3)
+#plot4(torch.load('modelsn/3423100noload.pt'), game)
+#plot4(torch.load('models/3423100from.pt'), game)
 #plot4(torch.load('models/3423100noutter.pt'), game)
 #plot4(torch.load('models/3355100.pt'), game)
 
