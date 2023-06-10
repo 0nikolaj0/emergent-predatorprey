@@ -119,7 +119,7 @@ def visualize_clusters(metrics1, clusters1, metrics2, clusters2, similar_points,
         res = kl_divergence(p, q)
         kl_div[i] = res
 
-    ax6.bar([x for x in range(len(kl_div))], kl_div)
+    ax6.bar([x for x in range(len(kl_div))], kl_div, color=[v(k) for k in range(7)])
 
     start = 0
     for i,val in enumerate(utter):
@@ -134,12 +134,15 @@ def visualize_clusters(metrics1, clusters1, metrics2, clusters2, similar_points,
     ax1.axis([torch.min(x[:,0])-1, torch.max(x[:,0])+1, torch.min(x[:,1])-1, torch.max(x[:,1])+1])
     ax1.set_xlabel("mean distance agent to prey")
     ax1.set_ylabel("mean distance between agents")
+    ax2.set_xlabel("mean distance agent to prey")
+    ax2.set_ylabel("mean distance between agents")
+    ax6.set_title("kl-divergence")
     plt.tight_layout()
     plt.show()
 
 
 
-def pipeline(model, num_agent, num_prey, num_cluster):
+def pipeline(model, num_agent, num_prey, num_cluster): #PIPELINE records gamedata, assigns metrics, k-clusters, returns all processed data
     locd, utterd = record_game_utter(num_agent, num_prey, model)
     metrics = get_game_metrics(locd, num_agent)
     clusters = kcluster(metrics, num_cluster)
@@ -184,9 +187,9 @@ def two_datas():
             mean_utter2[i][k] = newv / counter2[i] / 3
     visualize_clusters(metrics1, clusters1, metrics2, clusters2, similar_points, mean_utter, mean_utter2)
 
-two_datas()
+#two_datas()
 
-def get_plot1(paths):
+def get_3x2(paths):
     num_agent = 2
     num_prey = 1
     fig = plt.figure(figsize=(8,6))
@@ -231,7 +234,7 @@ def get_plot1(paths):
     plt.tight_layout()
     plt.show()
 
-#get_plot1(['models/2311100noload.pt', 'models/2322100from.pt','models/3423100from.pt'])
+#get_3x2(['modelsn/2311100.pt', 'modelsn/2322100.pt','modelsn/3423100noload.pt'])
 
 def plot_losses(paths): #plots losses for each epoch from a file
     fig, ax = plt.subplots()
@@ -258,6 +261,7 @@ def plot_losses(paths): #plots losses for each epoch from a file
     plt.legend(loc="upper right")
     #ax.set_yscale('log')
     #ax.set_ylim(1,100)
+    ax.set_ylim(bottom=0)
     #ax.set_yticks([1,2,4,8,16,32])
     #ax.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
     plt.grid()
@@ -296,6 +300,19 @@ def compare_minimum(distances):
 
 #compare_minimum(['3423100distancesnoload', '3423100distancesfrom','3423100distancesbaseline'])
 
+def random_comm_percentage(paths):
+    for path in paths:
+        _, utter, _, _ = pipeline(torch.load(f'modelsn/{path}.pt'),3,3,7)
+        fl = torch.flatten(utter,end_dim=1)
+        score = 0
+        for v in range(fl.size()[0]):
+            if all(ele < 1/5 for ele in fl[v]):
+                score += 1
+        print(path, score / fl.size()[0])
+
+random_comm_percentage(['3423100from', '3423100noload'])
+
+
 def utter3(path):
     utter = torch.load(path).detach()
     flattened = torch.flatten(utter, start_dim=1, end_dim=2)
@@ -317,7 +334,7 @@ def utter3(path):
     plt.ylabel('vocabulary symbol usage')
     plt.show()
 
-#utter3('trainingdatan/utter2322100from.pt')
+#utter3('trainingdatan/utter3423100from.pt')
 #utter3('trainingdatan/utter3423100noload.pt')
 #utter3('trainingdata/utter2322100noload.pt')
 
@@ -338,7 +355,7 @@ def plot4(agent, game):
     for index in range(len(history)):
         loc = history[index]['locations'][0].detach()
         if agent.using_utterances:
-            utt = history[index]['utterances'][0][1].detach()
+            utt = history[index]['utterances'][0][0].detach()
         ax = axs.flat[index]
         ax2 = axs.flat[index+16]
         ax.set_title(index)
