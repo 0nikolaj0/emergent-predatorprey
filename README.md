@@ -1,7 +1,9 @@
-# emergent-language
-An implementation of Emergence of Grounded Compositional Language in Multi-Agent Populations by Igor Mordatch and Pieter Abbeel
+# emergent-predatorprey
+An implementation of Emergence of a performant communication protocol in a multi-agent predator-prey game by Nikolaj Wilms
 
-To run, invoke `python3 train.py` in environment with PyTorch installed. To experiment with parameters, invoke `python3 train.py --help` to get a list of command line arguments that modify parameters. Currently training just prints out the loss of each game episode run, without any further analysis, and the model weights are not saved at the end. These features are coming soon.
+An extension of An implementation of Emergence of Grounded Compositional Language in Multi-Agent Populations by Igor Mordatch and Pieter Abbeel
+
+To run, invoke `python train.py` in environment with PyTorch installed. To experiment with parameters, invoke `python train.py --help` to get a list of command line arguments that modify parameters. Currently training just prints out the loss of each game episode run, without any further analysis, and the model weights are not saved at the end. These features are coming soon.
 
 * `modules/game.py` provides a non-tensor based implementation of the game mechanics (used for game behavior exploration and random game generation during training
 * `modules/agent.py` provides the full computational model including agent and game dynamics through an entire episode
