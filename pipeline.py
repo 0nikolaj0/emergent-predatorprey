@@ -278,7 +278,7 @@ def plot_losses(paths): #plots losses for each epoch from a file
 #plot_losses(['334550distances','334550distancesbaseline'])
 #plot_losses(['338850distancesnoload', '338850distancesbaseline','338850distances'])
 #plot_losses(['338850noload', '338850baseline','338850'])
-#plot_losses(['3423100distancesfrom','3423100distancesbaseline'])
+plot_losses(['3423100distancesfrom','3423100distancesbaseline'])
 
 def predict_cluster(pathc, pathg): #for a game location data file, computes the assigned cluster for each gamestep in the data
     metrics = get_game_metrics([pathg])
@@ -301,17 +301,24 @@ def compare_minimum(distances):
 #compare_minimum(['3423100distancesnoload', '3423100distancesfrom','3423100distancesbaseline'])
 
 def random_comm_percentage(paths):
+    res = []
     for path in paths:
-        _, utter, _, _ = pipeline(torch.load(f'modelsn/{path}.pt'),3,3,7)
+        max_agents = int(path[1])
+        max_preys = int(path[3])
+        _, utter, _, _ = pipeline(torch.load(f'modelsn/{path}.pt'),max_agents,max_preys,7)
         fl = torch.flatten(utter,end_dim=1)
         score = 0
         for v in range(fl.size()[0]):
             if all(ele < 1/5 for ele in fl[v]):
                 score += 1
-        print(path, score / fl.size()[0])
+        res.append((path, score / fl.size()[0]))
+        #print(path, score / fl.size()[0])
+    for val in res:
+        one, two = val
+        print(one, two*100)
 
-random_comm_percentage(['3423100from', '3423100noload'])
-
+#random_comm_percentage(['3423100from', '3423100noload', '2322100', '2311100'])
+#random_comm_percentage(['2322100', '2311100'])
 
 def utter3(path):
     utter = torch.load(path).detach()
@@ -323,13 +330,14 @@ def utter3(path):
         y = flattened[i]
         x = torch.sum(y,0) / data_size
         plt.scatter([i for _ in range(20)], [o for o in range(20)], s=x*200, c=colors[i % len(colors)])
-    plt.tick_params(
-        axis='x',          
-        which='both',      
-        bottom=False,      
-        top=False,         
-        labelbottom=False)
+    # plt.tick_params(
+    #     axis='x',          
+    #     which='both',      
+    #     bottom=False,      
+    #     top=False,         
+    #     labelbottom=False)
     plt.yticks([x for x in range(20)])
+    plt.xticks([z for z in range(0, num_epochs, 5)])
     plt.xlabel('learning run')
     plt.ylabel('vocabulary symbol usage')
     plt.show()
