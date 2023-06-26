@@ -181,7 +181,7 @@ def two_datas():
     for val in cluster_ids_x2:
         counter2[val] += 1
     for i, ind in enumerate(cluster_ids_x2):
-        mean_utter2[ind] += torch.sum(utterd2[i],0)
+        mean_utter2[ind] += torch.sum(utterd2[i],0)g
     for i, val in enumerate(mean_utter2):
         for k, newv in enumerate(val):
             mean_utter2[i][k] = newv / counter2[i] / 3
@@ -273,11 +273,7 @@ def plot_losses(paths): #plots losses for each epoch from a file
 #plot_losses(['2322100distancesnoload'])
 #plot_losses(['2311100distancesnoload', '2311100distancesnoutter'])
 #plot_losses(['2322100distancesnoload', '2322100distancesnoutter', '2322100distancesfrom'])
-#plot_losses(['3355100distances','3355100distancesnoutter'])
 #plot_losses(['2322100from'])
-#plot_losses(['334550distances','334550distancesbaseline'])
-#plot_losses(['338850distancesnoload', '338850distancesbaseline','338850distances'])
-#plot_losses(['338850noload', '338850baseline','338850'])
 #plot_losses(['3423100distancesfrom','3423100distancesbaseline'])
 
 def predict_cluster(pathc, pathg): #for a game location data file, computes the assigned cluster for each gamestep in the data
