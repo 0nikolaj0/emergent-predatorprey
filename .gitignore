@@ -2,13 +2,10 @@
 .ropeproject/
 .vscode/
 __pycache__/
-.trainingdata/
 mypy.ini
 *.sw*
-*.pt
 *.out
 *.pyc
-*.npy
 *.json
 venv/
 docker/

@@ -53,7 +53,7 @@ def main():
     print(game_config)
     print(agent_config)
     agent = AgentModule(agent_config)
-    #agent = torch.load('modelsn/2322100from.pt')
+    #agent = torch.load('models/2322100from.pt')
     if training_config.use_cuda:
         agent.cuda()
     optimizer = RMSprop(agent.parameters(), lr=training_config.learning_rate)
@@ -107,12 +107,12 @@ def main():
 
     if training_config.save_model:
         if agent_config.use_utterances:
-            torch.save(u, f'trainingdatan/utter{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}.pt')
-            np.save(f'trainingdatan/{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}', l)
-            np.save(f'trainingdatan/{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}distances', d)
+            torch.save(u, f'trainingdata/utter{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}.pt')
+            np.save(f'trainingdata/{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}', l)
+            np.save(f'trainingdata/{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}distances', d)
         else:
-            np.save(f'trainingdatan/{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}baseline', l)
-            np.save(f'trainingdatan/{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}distancesbaseline', d)
+            np.save(f'trainingdata/{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}baseline', l)
+            np.save(f'trainingdata/{game_config.min_agents}{game_config.max_agents}{game_config.min_prey}{game_config.max_prey}{training_config.num_epochs}distancesbaseline', d)
         torch.save(agent, training_config.save_model_file)
         print("Saved agent model weights at %s" % training_config.save_model_file)
         
