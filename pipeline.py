@@ -393,9 +393,9 @@ def appendixa():
              'loaded'   : torch.load('models/3423100from.pt')}
     runs_per_test = 2
     num_agents = 3
-    for test in range(1):
-        print(f"-----3 agents, {7+test} prey-----")
-        game = GameModule(default_game_config, num_agents, 7 + test)
+    for test in range(3):
+        print(f"-----3 agents, {5+test} prey-----")
+        game = GameModule(default_game_config, num_agents, 5 + test)
         for model in tests.values():
             result = 0
             for _ in range(runs_per_test):
