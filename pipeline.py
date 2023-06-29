@@ -181,7 +181,7 @@ def two_datas():
     for val in cluster_ids_x2:
         counter2[val] += 1
     for i, ind in enumerate(cluster_ids_x2):
-        mean_utter2[ind] += torch.sum(utterd2[i],0)g
+        mean_utter2[ind] += torch.sum(utterd2[i],0)
     for i, val in enumerate(mean_utter2):
         for k, newv in enumerate(val):
             mean_utter2[i][k] = newv / counter2[i] / 3
@@ -349,9 +349,9 @@ def plot4(agent, game):
     agent.reset()
     agent.train(True)
     game.using_utterances = agent.using_utterances
-    #game.locations = torch.FloatTensor([[[2,8],[8,2],[8,14],[14,8],[8,8],[6,6]]])
-    #game.goal_agents = torch.FloatTensor([[[2],[0],[1]]])
-    #game.goal_entities = torch.IntTensor([[[3],[4],[5]]])
+    game.locations = torch.FloatTensor([[[2,8],[8,2],[8,14],[14,8],[8,8],[6,6]]])
+    game.goal_agents = torch.FloatTensor([[[2],[0],[1]]])
+    game.goal_entities = torch.IntTensor([[[3],[4],[5]]])
 
     #print(game.goal_agents)
     #print(game.goal_entities)
@@ -381,13 +381,31 @@ def plot4(agent, game):
         ax2.yaxis.set_ticks([])
         ax2.set_xticks([x for x in range(20)])
     dist = game.get_avg_agent_to_goal_distance()
-    print(dist)
-    #plt.show()
+    plt.show()
 
-game = GameModule(default_game_config, 3, 3)
-plot4(torch.load('models/3423100from.pt'), game)
-plot4(torch.load('models/3423100baseline.pt'), game)
+# game = GameModule(default_game_config, 3, 3)
+# plot4(torch.load('models/3423100from.pt'), game)
+# plot4(torch.load('models/3423100baseline.pt'), game)
 
+def appendixa():
+    tests = {'baseline' : torch.load('models/3423100baseline.pt'), 
+             'unloaded' : torch.load('models/3423100noload.pt'), 
+             'loaded'   : torch.load('models/3423100from.pt')}
+    runs_per_test = 2
+    num_agents = 3
+    for test in range(1):
+        print(f"-----3 agents, {7+test} prey-----")
+        game = GameModule(default_game_config, num_agents, 7 + test)
+        for model in tests.values():
+            result = 0
+            for _ in range(runs_per_test):
+                game.using_utterances = model.using_utterances
+                _, _ = model(game)
+                dist = game.get_avg_agent_to_goal_distance().detach()
+                result += dist
+            print(result / runs_per_test / num_agents / default_game_config.batch_size)
+
+appendixa()
 
 
 
